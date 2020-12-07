@@ -1,0 +1,26 @@
+{
+  "name": "iot-discord-bot-1",
+  "version": "1.0.0",
+  "description": "Discord Bot for IOT-IMIN Olympia Training",
+  "main": "main.js",
+  "scripts": {
+	"test": "node main.js",
+	"start": "node main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/congminh1254/iot-discord-bot.git"
+  },
+  "author": "Minh Nguyen Cong",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/congminh1254/iot-discord-bot/issues"
+  },
+  "homepage": "https://github.com/congminh1254/iot-discord-bot#readme",
+  "devDependencies": {
+    "eslint": "^7.15.0"
+  },
+  "dependencies": {
+    "discord.js": "^12.5.1"
+  }
+}
