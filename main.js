@@ -20,4 +20,4 @@ discordClient.login(process.env.DISCORD_BOT_KEY);
 http.createServer(function (req, res) {
 	res.write('Hi there, I\'m running!');
 	res.end();
-}).listen(80);
+}).listen(process.env.PORT || 8080);
