@@ -1,6 +1,8 @@
 const Discord = require('discord.js');
 const express = require('express');
 const admin = require('firebase-admin');
+const moment = require('moment');
+const utils = require('./utils');
 
 // ---------Discord-------------- //
 
@@ -58,11 +60,83 @@ async function discordClearChannel(name = [], type='voice', category_name=null) 
 	});
 }
 
+async function discordProcessIOTTools(msg) {
+	var content = msg.content;
+	switch(content.split(' ')[0].trim().toLowerCase()) {
+		case "/acc":
+			var username = content.substr(4).trim().toLowerCase();
+			console.log(username);
+			var data = (await database.ref(`/private_users/`).orderByChild('lower_username').startAt(username).endAt(username).once('value')).val() || {};
+			if (Object.values(data).length == 0) {
+				msg.channel.send('Player not found :weary:');
+			} else {
+				var user = Object.values(data)[0];
+				var authUser = await auth.getUser(Object.keys(data)[0]);
+				var mess = new Discord.MessageEmbed()
+									.setColor('#e9a327')
+									.setTitle('Player Profile')
+									.addFields(
+										{name: 'Full name', value: user.name},
+										{name: 'Roles', value: utils.Permission[user.permission], inline: true},
+										{name: 'Ranking', value: utils.getRankGradeName(user.talent), inline: true},
+										{name: 'Birthday', value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY')},
+										{name: 'School', value: `${user.school.schoolName} - ${user.school.provinceName}`},
+										{name: 'Creation time', value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss')},
+										{name: 'Last sign-in time', value: moment(authUser.metadata.lastSignInTime).utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss')},
+									)
+									.setThumbnail(authUser.photoURL);
+				var send_mess = await msg.channel.send(mess);
+				Promise.all([
+					send_mess.react('🔒'),
+					send_mess.react('🔓'),
+					send_mess.react('❌')
+				]).then(async function() {
+					const filter = (reaction, user) => {
+						return ['🔒', '🔓', '❌'].includes(reaction.emoji.name) && user.id != send_mess.author.id;
+					};
+					await send_mess.awaitReactions(filter, { max: 1, time: 60000, errors: ['time'] })
+						.then(collected => {
+							const reaction = collected.first();
+							switch(reaction.emoji.name) {
+								case '🔒':
+									send_mess.reply('Lock account!');
+									break;
+								case '🔓':
+									send_mess.reply('Unlock account!');
+									break;
+								case '❌':
+									send_mess.reply('Delete account!');
+									break;
+							}
+						})
+						.catch(collected => {
+							send_mess.reply('You do not have any react.');
+						});
+					send_mess.delete();
+				});
+
+			}
+
+			console.log(msg);
+			break;
+		case "/something":
+			break;
+	}
+}
+
 discordClient.on('ready', () => {
 	console.log(`Logged in as ${discordClient.user.tag}!`);
 });
 
+
+
 discordClient.on('message', (msg) => {
+	console.log(msg);
+	switch (msg.channel.name.toLowerCase().trim()) {
+		case 'iot-tools':
+			discordProcessIOTTools(msg);
+			break;
+	}
 	if (msg.content === 'ping') {
 		msg.reply('pong');
 	}
