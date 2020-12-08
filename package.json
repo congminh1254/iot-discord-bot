@@ -4,8 +4,8 @@
   "description": "Discord Bot for IOT-IMIN Olympia Training",
   "main": "main.js",
   "scripts": {
-	"test": "node main.js",
-	"start": "node main.js"
+    "test": "node main.js",
+    "start": "node main.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,8 @@
     "eslint": "^7.15.0"
   },
   "dependencies": {
-    "discord.js": "^12.5.1"
+    "discord.js": "^12.5.1",
+    "express": "^4.17.1",
+    "firebase-admin": "^9.4.1"
   }
 }
