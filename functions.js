@@ -82,3 +82,8 @@ exports.accountUnlockAccount = async function (uid, minutes, reason) {
 	});
 	return (await result.json()).result;
 }
+
+exports.getIPData = async function (ip) {
+	var result = await fetch(`http://ip-api.com/json/${ip}`);
+	return await result.json();
+}

@@ -11,7 +11,7 @@ const utils = require('./utils');
 const functions = require('./functions');
 // ---------Discord-------------- //
 
-const discordClient = new Discord.Client();
+const discordClient = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 
 async function discordGetCategory(category_name) {
 	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, cache = true);
@@ -203,6 +203,8 @@ async function discordProcessIOTTools(msg) {
 									.setTitle('Player Profile')
 									.addFields(
 										{name: 'Full name', value: user.name || null},
+										{name: 'Username', value: user.username || null},
+										{name: 'Email', value: user.email || null},
 										{name: 'Roles', value: utils.Permission[user.permission] || null, inline: true},
 										{name: 'Ranking', value: utils.getRankGradeName(user.talent) || null, inline: true},
 										{name: 'Birthday', value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || null},
@@ -243,7 +245,6 @@ async function discordProcessIOTTools(msg) {
 						});
 					// send_mess.delete();
 				});
-
 			}
 			console.log(msg);
 			break;
@@ -256,7 +257,7 @@ async function discordProcessIOTUpdates(msg) {
 	var content = msg.content;
 	switch(content.split(' ')[0].trim().toLowerCase()) {
 		case "/review":
-			var username = content.substr(4).trim().toLowerCase();
+			var username = content.substr(7).trim().toLowerCase();
 			console.log(username);
 			var data = (await database.ref(`/private_users/`).orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 			if (!data)
@@ -265,7 +266,48 @@ async function discordProcessIOTUpdates(msg) {
 			if (Object.values(data).length == 0) {
 				msg.channel.send('Player not found :weary:');
 			} else {
-				
+				var user = Object.values(data)[0];
+				var uid = Object.keys(data)[0];
+				var authUser = await auth.getUser(uid);
+				var mess = new Discord.MessageEmbed()
+									.setColor('#e9a327')
+									.setTitle('Player Review')
+									.addFields(
+										{name: 'Full name', value: user.name || null},
+										{name: 'Username', value: user.username || null, inline: true},
+										{name: 'Email', value: user.email || null, inline: true},
+										{name: 'Birthday', value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || null},
+										{name: 'School', value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : null},
+										{name: 'Creation time', value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null},
+									)
+									.setThumbnail(authUser.photoURL);
+				var username = user.username;
+				{
+					var users = (await database.ref(`/private_users/`).orderByChild('name').startAt(user.name).endAt(user.name).once('value')).val() || {};
+					var value = '';
+					for (var user of Object.values(users))
+						if (user.username != username)
+							value += `${user.name} (${user.username})${(user.school) ? ' - '+ user.school.schoolName : ''} - ${utils.Permission[user.permission]}\n`;
+					if (value)
+						mess.addField(`Account with same name`, value);
+				}
+				if (user.ip) {
+					var ip = user.ip.ip;
+					var users = (await database.ref(`/private_users/`).orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
+					var value = '';
+					for (var user of Object.values(users))
+						if (user.username != username)
+							value += `${user.name} (${user.username})${(user.school) ? ' - '+ user.school.schoolName : ''} - ${utils.Permission[user.permission]}\n`;
+					if (value)
+						mess.addField(`Account with same IP`, value);
+					var joIPData = await functions.getIPData(ip);
+					mess.addField('IP', `${ip} - ${joIPData.country} - ${joIPData.as}`)
+				}
+				var send_mess = await msg.channel.send(mess);
+				Promise.all([
+					send_mess.react('✅'),
+					send_mess.react('❌')
+				]);
 			}
 			console.log(msg);
 			break;
@@ -291,6 +333,27 @@ discordClient.on('message', (msg) => {
 	if (msg.content === 'ping') {
 		msg.reply('pong');
 	}
+});
+
+discordClient.on('messageReactionAdd', async (reaction, user) => {
+	if (user.id == discordClient.user.id)
+		return;
+	// When we receive a reaction we check if the reaction is partial or not
+	if (reaction.partial) {
+		// If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
+		try {
+			await reaction.fetch();
+		} catch (error) {
+			console.error('Something went wrong when fetching the message: ', error);
+			// Return as `reaction.message.author` may be undefined/null
+			return;
+		}
+	}
+	// Now the message has been cached and is fully available
+	console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
+	// The reaction is now also fully available and the properties will be reflected accurately:
+	console.log(`${reaction.count} user(s) have given the same reaction to this message!`);
+	console.log(reaction);
 });
 
 discordClient.login(process.env.DISCORD_BOT_KEY);
