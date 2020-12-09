@@ -9,8 +9,8 @@ var firebase = admin.initializeApp(config);
 const moment = require('moment');
 const utils = require('./utils');
 const functions = require('./functions');
+const schedule = require('node-schedule');
 // ---------Discord-------------- //
-
 const discordClient = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 
 async function discordGetCategory(category_name) {
@@ -280,13 +280,15 @@ async function discordProcessIOTUpdates(msg) {
 										{name: 'School', value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : null},
 										{name: 'Creation time', value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null},
 									)
-									.setThumbnail(authUser.photoURL);
+									.setThumbnail(authUser.photoURL)
+									.setFooter(uid);
 				var username = user.username;
 				{
 					var users = (await database.ref(`/private_users/`).orderByChild('name').startAt(user.name).endAt(user.name).once('value')).val() || {};
 					var value = '';
+					var cnt = 0;
 					for (var user of Object.values(users))
-						if (user.username != username)
+						if (user.name && user.username != username && ++cnt <= 10)
 							value += `${user.name} (${user.username})${(user.school) ? ' - '+ user.school.schoolName : ''} - ${utils.Permission[user.permission]}\n`;
 					if (value)
 						mess.addField(`Account with same name`, value);
@@ -295,14 +297,21 @@ async function discordProcessIOTUpdates(msg) {
 					var ip = user.ip.ip;
 					var users = (await database.ref(`/private_users/`).orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
 					var value = '';
+					var cnt = 0;
 					for (var user of Object.values(users))
-						if (user.username != username)
+						if (user.name && user.username != username && ++cnt <= 10)
 							value += `${user.name} (${user.username})${(user.school) ? ' - '+ user.school.schoolName : ''} - ${utils.Permission[user.permission]}\n`;
 					if (value)
 						mess.addField(`Account with same IP`, value);
 					var joIPData = await functions.getIPData(ip);
 					mess.addField('IP', `${ip} - ${joIPData.country} - ${joIPData.as}`)
 				}
+				if (msg.author.bot) {
+					var members = msg.guild.roles.cache.find(r => r.name === "@admin").members;
+					var keys = Array.from(members.keys());
+					await msg.channel.send(`<@${keys[Math.floor(Math.random() * keys.length)]}>`);
+				} else
+					await msg.channel.send(`<@${msg.author.id}>`);
 				var send_mess = await msg.channel.send(mess);
 				Promise.all([
 					send_mess.react('✅'),
@@ -340,21 +349,54 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 		return;
 	// When we receive a reaction we check if the reaction is partial or not
 	if (reaction.partial) {
-		// If the message this reaction belongs to was removed the fetching might result in an API error, which we need to handle
 		try {
 			await reaction.fetch();
 		} catch (error) {
 			console.error('Something went wrong when fetching the message: ', error);
-			// Return as `reaction.message.author` may be undefined/null
 			return;
 		}
 	}
-	// Now the message has been cached and is fully available
-	console.log(`${reaction.message.author}'s message "${reaction.message.content}" gained a reaction!`);
-	// The reaction is now also fully available and the properties will be reflected accurately:
-	console.log(`${reaction.count} user(s) have given the same reaction to this message!`);
-	console.log(reaction);
+	if (reaction.message.embeds.length > 0) {
+		var embed = reaction.message.embeds[0];
+		console.log(embed.title);
+		switch (embed.title.toLowerCase()) {
+			case "player review":
+				if (reaction.emoji.name == '✅')
+					functions.accountApproveAccount(embed.footer.text).then(function(result) {
+						reaction.message.channel.send(`\`\`\`${result.message}\`\`\``);
+						reaction.message.delete();
+					});
+				else if (reaction.emoji.name == '❌')
+					functions.accountRejectAccount(embed.footer.text).then(function(result) {
+						reaction.message.channel.send(`\`\`\`${result.message}\`\`\``);
+						reaction.message.delete();
+					});
+				break;
+		}
+	}
 });
+
+var scheduleReview = schedule.scheduleJob('0 */6 * * *',function(){
+	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-updates');
+	channel.messages.fetch().then(messages => {
+        messages.array().forEach(msg => {
+            msg.delete();
+        });
+	})
+	
+	setTimeout(async function() {
+		channel.send('```Check Again!!!```');
+		var accounts = (await functions.accountGetAccountReview()).data;
+		if (accounts.length > 0) {
+			channel.send(`\`\`\`There are ${accounts.length} remaining accounts to be reviewed!\`\`\``);
+			for (var user of accounts) {
+				await channel.send(`/review ${user.email}`);
+				await new Promise((resolve) => {setTimeout(resolve(),30000)});
+			};
+		}
+	}, 15000);
+});
+
 
 discordClient.login(process.env.DISCORD_BOT_KEY);
 
@@ -378,7 +420,6 @@ async function sendChatMessage(path, message) {
 
 var refReviseRoom = database.ref('/revise/room/');
 refReviseRoom.on('child_added',function(snap) {
-	console.log(`New revise room: ${snap.key}`);
 	discordCreateChannel(`Room ${snap.key}`, 'voice', 'Revise Channels').then(function(invite) {
 		if (process.env.PUBLIC == 'true')
 			sendChatMessage(`/revise/chat/${snap.key}`, `Tham gia Discord: ${invite} Kênh thoại Phòng ${snap.key}!`);
@@ -386,7 +427,6 @@ refReviseRoom.on('child_added',function(snap) {
 });
 
 refReviseRoom.on('child_removed', function(snap) {
-	console.log(`Remove revise room: ${snap.key}`);
 	discordRemoveChannel(`Room ${snap.key}`);
 });
 

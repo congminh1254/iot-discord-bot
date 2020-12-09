@@ -31,7 +31,6 @@ exports.getIdToken = async function (uid=process.env.DEFAULT_ADMIN_UID) {
 };
 
 exports.accountDeleteAccount = async function (uid) {
-	console.log(await exports.getIdToken());
 	var result = await fetch(`${functions_base_url}/accountDeleteAccount`, {
 		method: 'POST',
 		body: JSON.stringify({
@@ -48,7 +47,6 @@ exports.accountDeleteAccount = async function (uid) {
 }
 
 exports.accountLockAccount = async function (uid, minutes, reason) {
-	console.log(await exports.getIdToken());
 	var result = await fetch(`${functions_base_url}/accountBlockAccount`, {
 		method: 'POST',
 		body: JSON.stringify({
@@ -67,13 +65,58 @@ exports.accountLockAccount = async function (uid, minutes, reason) {
 }
 
 exports.accountUnlockAccount = async function (uid, minutes, reason) {
-	console.log(await exports.getIdToken());
 	var result = await fetch(`${functions_base_url}/accountUnblockAccount`, {
 		method: 'POST',
 		body: JSON.stringify({
 			data: {
 				uid: uid
 			}
+		}),
+		headers: { 
+			'Content-Type': 'application/json', 
+			'Authorization': `Bearer ${await exports.getIdToken()}`
+		},
+	});
+	return (await result.json()).result;
+}
+
+exports.accountApproveAccount = async function (uid) {
+	var result = await fetch(`${functions_base_url}/accountApproveAccount`, {
+		method: 'POST',
+		body: JSON.stringify({
+			data: {
+				uid: uid
+			}
+		}),
+		headers: { 
+			'Content-Type': 'application/json', 
+			'Authorization': `Bearer ${await exports.getIdToken()}`
+		},
+	});
+	return (await result.json()).result;
+}
+
+exports.accountRejectAccount = async function (uid) {
+	var result = await fetch(`${functions_base_url}/accountRejectAccount`, {
+		method: 'POST',
+		body: JSON.stringify({
+			data: {
+				uid: uid
+			}
+		}),
+		headers: { 
+			'Content-Type': 'application/json', 
+			'Authorization': `Bearer ${await exports.getIdToken()}`
+		},
+	});
+	return (await result.json()).result;
+}
+
+exports.accountGetAccountReview = async function () {
+	var result = await fetch(`${functions_base_url}/accountGetUsersReview`, {
+		method: 'POST',
+		body: JSON.stringify({
+			data: {}
 		}),
 		headers: { 
 			'Content-Type': 'application/json', 
