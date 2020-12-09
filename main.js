@@ -1,9 +1,14 @@
 const Discord = require('discord.js');
 const express = require('express');
 const admin = require('firebase-admin');
+var config = JSON.parse(process.env.FIREBASE_CONFIG);
+var cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+config.credential = admin.credential.cert(cert);
+var firebase = admin.initializeApp(config);
+
 const moment = require('moment');
 const utils = require('./utils');
-
+const functions = require('./functions');
 // ---------Discord-------------- //
 
 const discordClient = new Discord.Client();
@@ -60,35 +65,159 @@ async function discordClearChannel(name = [], type='voice', category_name=null) 
 	});
 }
 
+async function discordDeleteUser(msg, uid) {
+	var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+	var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Delete account ${user.name} (${user.username})\`\`\``);
+	await Promise.all([
+		confirm_msg.react('✅'),
+		confirm_msg.react('❎'),
+	]);
+	const filter = (reaction, user) => {
+		return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
+	};
+	await confirm_msg.awaitReactions(filter, { max: 1, time: 60000, errors: ['time'] })
+		.then(collected => {
+			const reaction = collected.first();
+			switch(reaction.emoji.name) {
+				case '✅':
+					functions.accountDeleteAccount(uid).then(function(result) {
+						confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
+					});
+					break;
+				case '❎':
+					confirm_msg.channel.send('Cancel Deleted!');
+					break;
+			}
+		})
+		.catch(collected => {
+			confirm_msg.channel.send('You do not have any react.');
+		});
+}
+
+async function discordLockAccount(msg, uid) {
+	try {
+		var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+		var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Lock account ${user.name} (${user.username})\`\`\``);
+		await Promise.all([
+			confirm_msg.react('✅'),
+			confirm_msg.react('❎'),
+		]);
+		const filter = (reaction, user) => {
+			return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
+		};
+		var collected = await confirm_msg.awaitReactions(filter, { max: 1, time: 60000, errors: ['time'] })
+			.catch(collected => {
+				confirm_msg.channel.send('```You do not have any react.```');
+				throw new Error();
+			});
+		const reaction = collected.first();
+		console.log(reaction.id);
+		switch(reaction.emoji.name) {
+			case '✅':
+				var days_msg = await confirm_msg.channel.send(`\`\`\`How many days?\`\`\``);
+				collected = await days_msg.channel.awaitMessages((message, user) => {
+					return user.id === reaction.id;
+				}, {max: 1, time: 60000, errors: ['time']})
+				.catch(collected => {
+					throw new Error('```You do not have any message.```');
+				});
+				var msg_days_reply = collected.first();
+				var days = parseInt(msg_days_reply.content);
+				if (isNaN(days))
+					throw new Error('```Number of days is not valid.```');
+
+				var reason_msg = await confirm_msg.channel.send(`\`\`\`You'll lock this account ${days} day(s). Why?\`\`\``);
+				collected = await reason_msg.channel.awaitMessages((message, user) => {
+					return user.id === reaction.id;
+				}, {max: 1, time: 60000, errors: ['time']})
+				.catch(collected => {
+					throw new Error('```You do not have any message.```');
+				});
+				var msg_reason_reply = collected.first();
+				var reason = msg_reason_reply.content;
+				await confirm_msg.channel.send(`\`\`\`You'll lock this account ${days} day(s). Reason: ${reason}.\`\`\``);
+
+				functions.accountLockAccount(uid, days*24*60, reason).then(function(result) {
+					confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
+				});
+				break;
+			case '❎':
+				confirm_msg.channel.send(`\`\`\`Cancel Locked!\`\`\``);
+				break;
+		}
+	}
+	catch (err) {
+		console.log(err);
+		msg.channel.send(`Request error! ${err.message || ''}`);
+	}
+}
+
+async function discordUnlockAccount(msg, uid) {
+	var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+	var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Unlock account ${user.name} (${user.username})\`\`\``);
+	await Promise.all([
+		confirm_msg.react('✅'),
+		confirm_msg.react('❎'),
+	]);
+	const filter = (reaction, user) => {
+		return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
+	};
+	await confirm_msg.awaitReactions(filter, { max: 1, time: 60000, errors: ['time'] })
+		.then(collected => {
+			const reaction = collected.first();
+			switch(reaction.emoji.name) {
+				case '✅':
+					functions.accountUnlockAccount(uid).then(function(result) {
+						confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
+					});
+					break;
+				case '❎':
+					confirm_msg.channel.send('Cancel Unlocked!');
+					break;
+			}
+		})
+		.catch(collected => {
+			confirm_msg.channel.send('You do not have any react.');
+		});
+}
+
 async function discordProcessIOTTools(msg) {
 	var content = msg.content;
 	switch(content.split(' ')[0].trim().toLowerCase()) {
 		case "/acc":
 			var username = content.substr(4).trim().toLowerCase();
 			console.log(username);
-			var data = (await database.ref(`/private_users/`).orderByChild('lower_username').startAt(username).endAt(username).once('value')).val() || {};
+			var data = (await database.ref(`/private_users/`).orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
+			if (!data)
+				data = (await database.ref(`/private_users/`).orderByChild('email').startAt(username).endAt(username).once('value')).val();
+			data = data || {};
 			if (Object.values(data).length == 0) {
 				msg.channel.send('Player not found :weary:');
 			} else {
 				var user = Object.values(data)[0];
-				var authUser = await auth.getUser(Object.keys(data)[0]);
+				var uid = Object.keys(data)[0];
+				var authUser = await auth.getUser(uid);
+				var isLocked = (user.block_time) ? true : false;
 				var mess = new Discord.MessageEmbed()
 									.setColor('#e9a327')
 									.setTitle('Player Profile')
 									.addFields(
-										{name: 'Full name', value: user.name},
-										{name: 'Roles', value: utils.Permission[user.permission], inline: true},
-										{name: 'Ranking', value: utils.getRankGradeName(user.talent), inline: true},
-										{name: 'Birthday', value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY')},
-										{name: 'School', value: `${user.school.schoolName} - ${user.school.provinceName}`},
-										{name: 'Creation time', value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss')},
-										{name: 'Last sign-in time', value: moment(authUser.metadata.lastSignInTime).utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss')},
+										{name: 'Full name', value: user.name || null},
+										{name: 'Roles', value: utils.Permission[user.permission] || null, inline: true},
+										{name: 'Ranking', value: utils.getRankGradeName(user.talent) || null, inline: true},
+										{name: 'Birthday', value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || null},
+										{name: 'School', value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : null},
+										{name: 'Creation time', value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null},
+										{name: 'Last sign-in time', value: moment(authUser.metadata.lastSignInTime).utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss')|| null},
 									)
 									.setThumbnail(authUser.photoURL);
+				if (isLocked) {
+					mess.addField('Lock until', moment(user.block_time, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss'));
+					mess.addField('Lock reason', user.block_reason);
+				}
 				var send_mess = await msg.channel.send(mess);
 				Promise.all([
-					send_mess.react('🔒'),
-					send_mess.react('🔓'),
+					(!isLocked) ? send_mess.react('🔒') : send_mess.react('🔓'),
 					send_mess.react('❌')
 				]).then(async function() {
 					const filter = (reaction, user) => {
@@ -99,24 +228,45 @@ async function discordProcessIOTTools(msg) {
 							const reaction = collected.first();
 							switch(reaction.emoji.name) {
 								case '🔒':
-									send_mess.reply('Lock account!');
+									discordLockAccount(send_mess, uid);
 									break;
 								case '🔓':
-									send_mess.reply('Unlock account!');
+									discordUnlockAccount(send_mess, uid);
 									break;
 								case '❌':
-									send_mess.reply('Delete account!');
+									discordDeleteUser(send_mess, uid);
 									break;
 							}
 						})
 						.catch(collected => {
 							send_mess.reply('You do not have any react.');
 						});
-					send_mess.delete();
+					// send_mess.delete();
 				});
 
 			}
+			console.log(msg);
+			break;
+		case "/something":
+			break;
+	}
+}
 
+async function discordProcessIOTUpdates(msg) {
+	var content = msg.content;
+	switch(content.split(' ')[0].trim().toLowerCase()) {
+		case "/review":
+			var username = content.substr(4).trim().toLowerCase();
+			console.log(username);
+			var data = (await database.ref(`/private_users/`).orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
+			if (!data)
+				data = (await database.ref(`/private_users/`).orderByChild('email').startAt(username).endAt(username).once('value')).val();
+			data = data || {};
+			if (Object.values(data).length == 0) {
+				msg.channel.send('Player not found :weary:');
+			} else {
+				
+			}
 			console.log(msg);
 			break;
 		case "/something":
@@ -128,13 +278,14 @@ discordClient.on('ready', () => {
 	console.log(`Logged in as ${discordClient.user.tag}!`);
 });
 
-
-
 discordClient.on('message', (msg) => {
 	console.log(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
 		case 'iot-tools':
 			discordProcessIOTTools(msg);
+			break;
+		case 'iot-updates': 
+			discordProcessIOTUpdates(msg);
 			break;
 	}
 	if (msg.content === 'ping') {
@@ -145,15 +296,12 @@ discordClient.on('message', (msg) => {
 discordClient.login(process.env.DISCORD_BOT_KEY);
 
 // ---------Firebase-------------- //
-var config = JSON.parse(process.env.FIREBASE_CONFIG);
-var cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-config.credential = admin.credential.cert(cert);
-var firebase = admin.initializeApp(config);
+
 const database = firebase.database();
 const auth = firebase.auth();
 const storage = firebase.storage();
 
-
+functions.getIdToken();
 async function sendChatMessage(path, message) {
 	var messId = (new Date()).getTime();
 	var joMessage = {

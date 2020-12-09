@@ -24,6 +24,7 @@
     "discord.js": "^12.5.1",
     "express": "^4.17.1",
     "firebase-admin": "^9.4.1",
-    "moment": "^2.29.1"
+    "moment": "^2.29.1",
+    "node-fetch": "^2.6.1"
   }
 }
