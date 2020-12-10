@@ -8,7 +8,7 @@ const fetch = require('node-fetch');
 var idToken = {};
 var functions_base_url = 'https://us-central1-iot-project-1509.cloudfunctions.net';
 
-setTimeout(function() {
+setInterval(function() {
 	idToken = {}
 }, 1800000);
 

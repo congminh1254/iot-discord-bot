@@ -327,6 +327,7 @@ async function discordProcessIOTUpdates(msg) {
 
 discordClient.on('ready', () => {
 	console.log(`Logged in as ${discordClient.user.tag}!`);
+	discordClient.user.setActivity('IOT - IMIN Olympia Training', { type: 'PLAYING', url: 'https://iot.chinhphucvn.com' });
 });
 
 discordClient.on('message', (msg) => {
