@@ -392,7 +392,7 @@ discordClient.on('message', async function (msg) {
 	if (msg.content === 'ping') {
 		msg.reply('pong');
 	}
-	if (msg.content.toLowerCase().indexOf('baymax') > -1) {
+	if (msg.content.toLowerCase().indexOf('baymax') > -1 || msg.content.indexOf(`<@!${discordClient.user.id}>`)) {
 		var msg_text = bot_config.GREETING_MSG[Math.floor(Math.random() * bot_config.GREETING_MSG.length)];
 		var lang = bot_config.GREETING_LANGUAGES[Math.floor(Math.random() * bot_config.GREETING_LANGUAGES.length)];	  
 		// Translates some text into Russian
