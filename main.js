@@ -307,7 +307,7 @@ async function discordProcessIOTUpdates(msg) {
 					mess.addField('IP', `${ip} - ${joIPData.country} - ${joIPData.as}`)
 				}
 				if (msg.author.bot) {
-					var members = msg.guild.roles.cache.find(r => r.name === "@admin").members;
+					var members = msg.guild.roles.cache.find(r => r.name === "admin").members;
 					var keys = Array.from(members.keys());
 					await msg.channel.send(`<@${keys[Math.floor(Math.random() * keys.length)]}>`);
 				} else
@@ -320,9 +320,50 @@ async function discordProcessIOTUpdates(msg) {
 			}
 			console.log(msg);
 			break;
+		case "/link":
+			var uid = msg.content.split(' ')[2];
+			var member = msg.guild.members.cache.find(r => r.id === uid);
+			if (member)
+				linkIOTAccount(member, true);
+			break;
+		case "/unlink":
+			var uid = msg.content.split(' ')[2];
+			var member = msg.guild.members.cache.find(r => r.id === uid);
+			if (member)
+				unlinkIOTAccount(member, false);
+			break;
 		case "/something":
 			break;
 	}
+}
+
+async function linkIOTAccount(member, welcome_message = true) {
+	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'general');
+	var uid = member.id;
+	var users = (await database.ref('/private_users/').orderByChild('/discord/id').startAt(uid).endAt(uid).once('value')).val() || {};
+	users = Object.values(users);
+	if (users.length > 0) {
+		var user = users[0];
+		switch(user.permission) {
+			case 10:
+				await member.roles.add(member.guild.roles.cache.find(r => r.name === "admin"));
+				break;
+			case 5:
+				await member.roles.add(member.guild.roles.cache.find(r => r.name === "moderator"));
+				break;
+			case 2:
+				await member.roles.add(member.guild.roles.cache.find(r => r.name === "verified-player"));
+				break;
+		}
+		if (welcome_message)
+			channel.send(`Chào mừng người chơi IOT ${user.username} (${utils.getRankGradeName(user.talent)}) tham gia server ${member} :heart_eyes_cat:`)
+	}
+}
+
+async function unlinkIOTAccount(member, goodbye_message = false) {
+	member.roles.remove(member.roles.cache);
+	if (goodbye_message)
+		channel.send(`Người chơi IOT đã ngắt kết nối ${member} :heart_eyes_cat:`)
 }
 
 discordClient.on('ready', () => {
@@ -375,6 +416,10 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 				break;
 		}
 	}
+});
+
+discordClient.on('guildMemberAdd', async function(member) {
+	linkIOTAccount(member, true);
 });
 
 var scheduleReview = schedule.scheduleJob('0 */6 * * *',function(){
