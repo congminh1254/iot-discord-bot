@@ -5,11 +5,19 @@ var config = JSON.parse(process.env.FIREBASE_CONFIG);
 var cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 config.credential = admin.credential.cert(cert);
 var firebase = admin.initializeApp(config);
-
+const bot_config = require('./config');
 const moment = require('moment');
 const utils = require('./utils');
 const functions = require('./functions');
 const schedule = require('node-schedule');
+const {Translate} = require('@google-cloud/translate').v2;
+const translate = new Translate();
+const fs = require('fs');
+fs.writeFileSync('cert.json', JSON.stringify(cert));
+
+// ---------Testing-------------- //
+
+
 // ---------Discord-------------- //
 const discordClient = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 
@@ -371,7 +379,7 @@ discordClient.on('ready', () => {
 	discordClient.user.setActivity('IOT - IMIN Olympia Training', { type: 'PLAYING', url: 'https://iot.chinhphucvn.com' });
 });
 
-discordClient.on('message', (msg) => {
+discordClient.on('message', async function (msg) {
 	console.log(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
 		case 'iot-tools':
@@ -383,6 +391,13 @@ discordClient.on('message', (msg) => {
 	}
 	if (msg.content === 'ping') {
 		msg.reply('pong');
+	}
+	if (msg.content.toLowerCase().indexOf('baymax') > -1) {
+		var msg_text = bot_config.GREETING_MSG[Math.floor(Math.random() * bot_config.GREETING_MSG.length)];
+		var lang = bot_config.GREETING_LANGUAGES[Math.floor(Math.random() * bot_config.GREETING_LANGUAGES.length)];	  
+		// Translates some text into Russian
+		const [translation] = await translate.translate(msg_text, lang);
+		msg.reply(translation);
 	}
 });
 

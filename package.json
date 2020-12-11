@@ -21,6 +21,7 @@
     "eslint": "^7.15.0"
   },
   "dependencies": {
+    "@google-cloud/translate": "^6.0.5",
     "discord.js": "^12.5.1",
     "express": "^4.17.1",
     "firebase-admin": "^9.4.1",
