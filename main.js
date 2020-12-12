@@ -331,14 +331,18 @@ async function discordProcessIOTUpdates(msg) {
 		case "/link":
 			var uid = msg.content.split(' ')[2];
 			var member = msg.guild.members.cache.find(r => r.id === uid);
-			if (member)
+			if (member) {
 				linkIOTAccount(member, true);
+				msg.delete();
+			}
 			break;
 		case "/unlink":
 			var uid = msg.content.split(' ')[2];
 			var member = msg.guild.members.cache.find(r => r.id === uid);
-			if (member)
+			if (member) {
 				unlinkIOTAccount(member, false);
+				msg.delete();
+			}
 			break;
 		case "/something":
 			break;
