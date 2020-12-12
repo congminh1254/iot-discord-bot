@@ -328,6 +328,14 @@ async function discordProcessIOTUpdates(msg) {
 			}
 			console.log(msg);
 			break;
+		case "/something":
+			break;
+	}
+}
+
+async function discordProcessBotLogs(msg) {
+	var content = msg.content;
+	switch(content.split(' ')[0].trim().toLowerCase()) {
 		case "/link":
 			var uid = msg.content.split(' ')[2];
 			var member = msg.guild.members.cache.find(r => r.id === uid);
@@ -340,7 +348,15 @@ async function discordProcessIOTUpdates(msg) {
 			var uid = msg.content.split(' ')[2];
 			var member = msg.guild.members.cache.find(r => r.id === uid);
 			if (member) {
-				unlinkIOTAccount(member, false);
+				linkIOTAccount(member, false);
+				msg.delete();
+			}
+			break;
+		case "/relink":
+			var uid = msg.content.split(' ')[2];
+			var member = msg.guild.members.cache.find(r => r.id === uid);
+			if (member) {
+				linkIOTAccount(member, false);
 				msg.delete();
 			}
 			break;
@@ -350,6 +366,7 @@ async function discordProcessIOTUpdates(msg) {
 }
 
 async function linkIOTAccount(member, welcome_message = true) {
+	await member.roles.remove(member.roles.cache);
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'general');
 	var uid = member.id;
 	var users = (await database.ref('/private_users/').orderByChild('/discord/id').startAt(uid).endAt(uid).once('value')).val() || {};
@@ -367,15 +384,36 @@ async function linkIOTAccount(member, welcome_message = true) {
 				await member.roles.add(member.guild.roles.cache.find(r => r.name === "verified-player"));
 				break;
 		}
+		if (user.talent)
+			switch (user.talent.rank) {
+				case 0:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-rookie"));
+					break;
+				case 1:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-bronze"));
+					break;
+				case 2:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-silver"));
+					break;
+				case 3:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-gold"));
+					break;
+				case 4:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-platinum"));
+					break;
+				case 5:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-diamond"));
+					break;
+				case 6:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-crown"));
+					break;
+				case 7:
+					await member.roles.add(member.guild.roles.cache.find(r => r.name === "rank-ace"));
+					break;
+			}
 		if (welcome_message)
 			channel.send(`Chào mừng người chơi IOT ${user.username} (${utils.getRankGradeName(user.talent)}) tham gia server ${member} :heart_eyes_cat:`)
 	}
-}
-
-async function unlinkIOTAccount(member, goodbye_message = false) {
-	member.roles.remove(member.roles.cache);
-	if (goodbye_message)
-		channel.send(`Người chơi IOT đã ngắt kết nối ${member} :heart_eyes_cat:`)
 }
 
 discordClient.on('ready', () => {
@@ -391,6 +429,9 @@ discordClient.on('message', async function (msg) {
 			break;
 		case 'iot-updates': 
 			discordProcessIOTUpdates(msg);
+			break;
+		case 'bot-logs':
+			discordProcessBotLogs(msg);
 			break;
 	}
 	if (msg.content === 'ping') {
