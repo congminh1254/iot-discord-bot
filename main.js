@@ -360,6 +360,12 @@ async function discordProcessBotLogs(msg) {
 				msg.delete();
 			}
 			break;
+		case "/relink-all":
+			msg.guild.members.cache.forEach(async function (member) {
+				if (!member.bot)
+					linkIOTAccount(member, false);
+			}); 
+			break;
 		case "/something":
 			break;
 	}
