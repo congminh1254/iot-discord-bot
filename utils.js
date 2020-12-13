@@ -156,6 +156,30 @@ function getGrade(grade) {
 	return '';
 }
 
+exports.getRankClass = function(rank) {
+	if (!rank)
+		return '';
+	switch (rank.rank) {
+	case 0:
+		return 'rank-rookie';
+	case 1:
+		return 'rank-bronze';
+	case 2:
+		return 'rank-silver';
+	case 3:
+		return 'rank-gold';
+	case 4:
+		return 'rank-platinum';
+	case 5:
+		return 'rank-diamond';
+	case 6:
+		return 'rank-crown';
+	case 7:
+		return 'rank-ace';
+	}
+	return '';
+};
+
 exports.getRankGradeName = function(rg) {
 	if (rg != null && rg.rank != null && rg.grade != null) {
 		if (rg.rank < 6)

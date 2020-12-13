@@ -13,6 +13,10 @@ const schedule = require('node-schedule');
 const {Translate} = require('@google-cloud/translate').v2;
 const translate = new Translate();
 const fs = require('fs');
+const pdf = require('html-pdf');
+const ejs = require('ejs');
+const { resolve } = require('path');
+const { rejects } = require('assert');
 fs.writeFileSync('cert.json', JSON.stringify(cert));
 
 // ---------Testing-------------- //
@@ -158,6 +162,14 @@ async function discordLockAccount(msg, uid) {
 		console.log(err);
 		msg.channel.send(`Request error! ${err.message || ''}`);
 	}
+}
+
+async function getIOTUidFromDiscordId(discord_id) {
+	var users = (await database.ref('/private_users/').orderByChild('/discord/id').startAt(discord_id).endAt(discord_id).once('value')).val() || {};
+	users = Object.keys(users);
+	if (users.length > 0)
+		return users[0];
+	return null;
 }
 
 async function discordUnlockAccount(msg, uid) {
@@ -371,6 +383,33 @@ async function discordProcessBotLogs(msg) {
 	}
 }
 
+async function discordProcessMessage(msg) {
+	var content = msg.content;
+	switch(content.split(' ')[0].trim().toLowerCase()) {
+		case "/iot":
+			msg.react('👌');
+			if (msg.mentions.users.size < 1) {
+				var id = msg.author.id;
+				var uid = await getIOTUidFromDiscordId(id);
+					var buffer = await generateIOTProfile(uid);
+					msg.channel.send({
+						files: [buffer]
+					});
+			} else {
+				for (var user of msg.mentions.users.values()) {
+					console.log(user);
+					var id = user.id;
+					var uid = await getIOTUidFromDiscordId(id);
+					var buffer = await generateIOTProfile(uid);
+					msg.channel.send({
+						files: [buffer]
+					});
+				}
+			}
+			break;
+	}
+}
+
 async function linkIOTAccount(member, welcome_message = true) {
 	await member.roles.remove(member.roles.cache);
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'general');
@@ -422,6 +461,64 @@ async function linkIOTAccount(member, welcome_message = true) {
 	}
 }
 
+
+function generateIOTProfile(uid) {
+	return new Promise(async function(resolve, reject) {
+		var html = fs.readFileSync('./templates/msg-rank.html', 'utf8');
+		var params = {};
+		var public_user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+		var tours = (await database.ref(`/tournaments/`).once('value')).val();
+		var label_permission = '';
+		for (var tour of Object.values(tours))
+			if (tour.tourModerator.includes(uid))
+				label_permission += `<img class="icon-logo" src="${tour.tourLogo}"></img>`;
+		if (label_permission.length < 5)
+			label_permission = utils.Permission[public_user.permission];
+		if (public_user.name.length > 20) {
+			var names = public_user.name.split(' ');
+			public_user.name = `${names[names.length -2]} ${names[names - 1]}`;
+		}
+		params['user'] = {
+			'avatar': public_user.avatarUrl || 'https://iot.chinhphucvn.com/img/user-avatar.png',
+			'rank_name': utils.getRankGradeName(public_user.talent),
+			'rank_class': utils.getRankClass(public_user.talent),
+			'rank_point': public_user.talent.point,
+			'name': public_user.name,
+			'username': public_user.username,
+			'school': `${public_user.school.schoolName} - ${public_user.school.provinceName}`,
+			'account_time': null,
+			'account_time_unit': null,
+			'permission_name': utils.Permission[public_user.permission],
+			'permission': public_user.permission,
+			'list_tournaments': label_permission,
+		}
+		var created_time = public_user.created_at || Math.floor((new Date())/1000);
+		var years = (new moment()).diff(moment.unix(created_time), 'years');
+		var months = (new moment()).diff(moment.unix(created_time), 'months');
+		var days = (new moment()).diff(moment.unix(created_time), 'days');
+		if (years) {
+			params.user['account_time'] = years;
+			params.user['account_time_unit'] = 'Năm';
+		} else if (months) {
+			params.user['account_time'] = months;
+			params.user['account_time_unit'] = 'Tháng';
+		} else {
+			params.user['account_time'] = days;
+			params.user['account_time_unit'] = 'Ngày';
+		}
+
+		html = ejs.render(html, params);
+		var options = { 
+			'zoomFactor': '2',
+			'type': 'png'
+		};
+		
+		pdf.create(html, options).toBuffer(function(err, buffer){
+			resolve(buffer);
+		});
+	});
+}
+
 discordClient.on('ready', () => {
 	console.log(`Logged in as ${discordClient.user.tag}!`);
 	discordClient.user.setActivity('IOT - IMIN Olympia Training', { type: 'PLAYING', url: 'https://iot.chinhphucvn.com' });
@@ -429,6 +526,7 @@ discordClient.on('ready', () => {
 
 discordClient.on('message', async function (msg) {
 	console.log(msg);
+	discordProcessMessage(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
 		case 'iot-tools':
 			discordProcessIOTTools(msg);
@@ -440,6 +538,7 @@ discordClient.on('message', async function (msg) {
 			discordProcessBotLogs(msg);
 			break;
 	}
+
 	if (msg.content === 'ping') {
 		msg.reply('pong');
 	}
