@@ -475,8 +475,8 @@ function generateIOTProfile(uid) {
 		if (label_permission.length < 5)
 			label_permission = utils.Permission[public_user.permission];
 		if (public_user.name.length > 20) {
-			var names = public_user.name.split(' ');
-			public_user.name = `${names[names.length -2]} ${names[names - 1]}`;
+			var names = public_user.name.trim().split(' ');
+			public_user.name = `${names[names.length -2]} ${names[names.length - 1]}`;
 		}
 		params['user'] = {
 			'avatar': public_user.avatarUrl || 'https://iot.chinhphucvn.com/img/user-avatar.png',
