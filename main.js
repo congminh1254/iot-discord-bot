@@ -15,9 +15,8 @@ const translate = new Translate();
 const fs = require('fs');
 const pdf = require('html-pdf');
 const ejs = require('ejs');
-const { resolve } = require('path');
-const { rejects } = require('assert');
 fs.writeFileSync('cert.json', JSON.stringify(cert));
+const fetch = require('node-fetch');
 
 // ---------Testing-------------- //
 
@@ -671,3 +670,7 @@ app.post('/discord_webhook', (req, res) => {
 	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
 	res.send('Hi there, I\'m running!');
 });
+
+setInterval(async function() {
+	await fetch(process.env.HOMEPAGE || 'https://www.chinhphucvn.com');
+}, 60000);
