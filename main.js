@@ -630,12 +630,12 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 		case 'player review':
 			if (reaction.emoji.name == '✅')
 				functions.accountApproveAccount(embed.footer.text).then(function (result) {
-					reaction.message.channel.send(`\`\`\`${result.data.message}\`\`\``);
+					reaction.message.channel.send(`\`\`\`${result.message}\`\`\``);
 					reaction.message.delete();
 				});
 			else if (reaction.emoji.name == '❌')
 				functions.accountRejectAccount(embed.footer.text).then(function (result) {
-					reaction.message.channel.send(`\`\`\`${result.data.message}\`\`\``);
+					reaction.message.channel.send(`\`\`\`${result.message}\`\`\``);
 					reaction.message.delete();
 				});
 			break;
