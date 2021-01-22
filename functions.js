@@ -8,11 +8,11 @@ const fetch = require('node-fetch');
 var idToken = {};
 var functions_base_url = 'https://us-central1-iot-project-1509.cloudfunctions.net';
 
-setInterval(function() {
-	idToken = {}
+setInterval(function () {
+	idToken = {};
 }, 1800000);
 
-exports.getIdToken = async function (uid=process.env.DEFAULT_ADMIN_UID) {
+exports.getIdToken = async function (uid = process.env.DEFAULT_ADMIN_UID) {
 	if (idToken[uid])
 		return idToken[uid];
 	var customToken = await auth.createCustomToken(uid);
@@ -22,7 +22,9 @@ exports.getIdToken = async function (uid=process.env.DEFAULT_ADMIN_UID) {
 			token: customToken,
 			returnSecureToken: true
 		}),
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Content-Type': 'application/json'
+		},
 	});
 	var result = await result.json();
 	idToken[uid] = result.idToken;
@@ -38,13 +40,13 @@ exports.accountDeleteAccount = async function (uid) {
 				uid: uid
 			}
 		}),
-		headers: { 
-			'Content-Type': 'application/json', 
+		headers: {
+			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${await exports.getIdToken()}`
 		},
 	});
 	return (await result.json()).result;
-}
+};
 
 exports.accountLockAccount = async function (uid, minutes, reason) {
 	var result = await fetch(`${functions_base_url}/accountBlockAccount`, {
@@ -56,13 +58,13 @@ exports.accountLockAccount = async function (uid, minutes, reason) {
 				reason: reason
 			}
 		}),
-		headers: { 
-			'Content-Type': 'application/json', 
+		headers: {
+			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${await exports.getIdToken()}`
 		},
 	});
 	return (await result.json()).result;
-}
+};
 
 exports.accountUnlockAccount = async function (uid, minutes, reason) {
 	var result = await fetch(`${functions_base_url}/accountUnblockAccount`, {
@@ -72,13 +74,13 @@ exports.accountUnlockAccount = async function (uid, minutes, reason) {
 				uid: uid
 			}
 		}),
-		headers: { 
-			'Content-Type': 'application/json', 
+		headers: {
+			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${await exports.getIdToken()}`
 		},
 	});
 	return (await result.json()).result;
-}
+};
 
 exports.accountApproveAccount = async function (uid) {
 	var result = await fetch(`${functions_base_url}/accountApproveAccount`, {
@@ -88,13 +90,13 @@ exports.accountApproveAccount = async function (uid) {
 				uid: uid
 			}
 		}),
-		headers: { 
-			'Content-Type': 'application/json', 
+		headers: {
+			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${await exports.getIdToken()}`
 		},
 	});
 	return (await result.json()).result;
-}
+};
 
 exports.accountRejectAccount = async function (uid) {
 	var result = await fetch(`${functions_base_url}/accountRejectAccount`, {
@@ -104,13 +106,13 @@ exports.accountRejectAccount = async function (uid) {
 				uid: uid
 			}
 		}),
-		headers: { 
-			'Content-Type': 'application/json', 
+		headers: {
+			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${await exports.getIdToken()}`
 		},
 	});
 	return (await result.json()).result;
-}
+};
 
 exports.accountGetAccountReview = async function () {
 	var result = await fetch(`${functions_base_url}/accountGetUsersReview`, {
@@ -118,15 +120,15 @@ exports.accountGetAccountReview = async function () {
 		body: JSON.stringify({
 			data: {}
 		}),
-		headers: { 
-			'Content-Type': 'application/json', 
+		headers: {
+			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${await exports.getIdToken()}`
 		},
 	});
 	return (await result.json()).result;
-}
+};
 
 exports.getIPData = async function (ip) {
 	var result = await fetch(`http://ip-api.com/json/${ip}`);
 	return await result.json();
-}
+};
