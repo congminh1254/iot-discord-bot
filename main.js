@@ -29,7 +29,7 @@ const discordClient = new Discord.Client({
 });
 
 async function discordGetCategory(category_name) {
-	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, cache = true);
+	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	var category = null;
 	if (category_name) {
 		category = guild.channels.cache.find(c => c.name.toLowerCase().trim() == category_name.toLowerCase().trim() && c.type == 'category');
@@ -40,7 +40,7 @@ async function discordGetCategory(category_name) {
 }
 
 async function discordCreateChannel(name, type = 'voice', category_name = null) {
-	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, cache = true);
+	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	var category = await discordGetCategory(category_name);
 	var voice_channel = null;
 	await guild.channels.cache.forEach(async function (channel) {
@@ -64,7 +64,7 @@ async function discordCreateChannel(name, type = 'voice', category_name = null) 
 }
 
 async function discordRemoveChannel(name, type = 'voice') {
-	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, cache = true);
+	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	await guild.channels.cache.forEach(async function (channel) {
 		if (channel.type == type && channel.name.trim().toLowerCase() == name.trim().toLowerCase())
 			await channel.delete();
@@ -72,7 +72,7 @@ async function discordRemoveChannel(name, type = 'voice') {
 }
 
 async function discordClearChannel(name = [], type = 'voice', category_name = null) {
-	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, cache = true);
+	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	await guild.channels.cache.forEach(async function (channel) {
 		if (channel.type == type && !name.includes(channel.name) &&
 			channel.parent.name.trim().toLowerCase() == category_name.trim().toLowerCase())
@@ -323,7 +323,6 @@ async function discordProcessIOTUpdates(msg) {
 	switch (content.split(' ')[0].trim().toLowerCase()) {
 	case '/review':
 		var username = content.substr(7).trim().toLowerCase();
-		console.log(username);
 		var data = (await database.ref('/private_users/').orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
@@ -360,24 +359,27 @@ async function discordProcessIOTUpdates(msg) {
 				}, )
 				.setThumbnail(authUser.photoURL)
 				.setFooter(uid);
-			var username = user.username; {
+			username = user.username; 
+			if (username)
+			{
 				var users = (await database.ref('/private_users/').orderByChild('name').startAt(user.name).endAt(user.name).once('value')).val() || {};
 				var value = '';
 				var cnt = 0;
-				for (var user of Object.values(users))
-					if (user.name && user.username != username && ++cnt <= 10)
-						value += `${user.name} (${user.username})${(user.school) ? ' - '+ user.school.schoolName : ''} - ${utils.Permission[user.permission]}\n`;
+				for (var cur_user of Object.values(users))
+					if (cur_user.name && cur_user.username != username && ++cnt <= 10)
+						value += `${cur_user.name} (${cur_user.username})${(cur_user.school) ? ' - '+ cur_user.school.schoolName : ''} - ${utils.Permission[cur_user.permission]}\n`;
 				if (value)
 					mess.addField('Account with same name', value);
 			}
 			if (user.ip) {
 				var ip = user.ip.ip;
-				var users = (await database.ref('/private_users/').orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
-				var value = '';
-				var cnt = 0;
-				for (var user of Object.values(users))
-					if (user.name && user.username != username && ++cnt <= 10)
-						value += `${user.name} (${user.username})${(user.school) ? ' - '+ user.school.schoolName : ''} - ${utils.Permission[user.permission]}\n`;
+				users = {};
+				users = (await database.ref('/private_users/').orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
+				value = '';
+				cnt = 0;
+				for (cur_user of Object.values(users))
+					if (cur_user.name && cur_user.username != username && ++cnt <= 10)
+						value += `${cur_user.name} (${cur_user.username})${(user.school) ? ' - '+ cur_user.school.schoolName : ''} - ${utils.Permission[cur_user.permission]}\n`;
 				if (value)
 					mess.addField('Account with same IP', value);
 				var joIPData = await functions.getIPData(ip);
@@ -463,6 +465,10 @@ async function discordProcessMessage(msg) {
 				});
 			}
 		}
+		break;
+	case '/help':
+		break;
+	case '/help-done':
 		break;
 	}
 }
@@ -595,7 +601,7 @@ discordClient.on('message', async function (msg) {
 		discordProcessIOTUpdates(msg);
 		break;
 	case 'bot-logs':
-		discordProcessBotLogs(msg);
+		// discordProcessBotLogs(msg);
 		break;
 	}
 

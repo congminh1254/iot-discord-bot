@@ -1,0 +1,142 @@
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
+    <link rel="stylesheet" href="https://iot.chinhphucvn.com/css/main.css">
+    <meta name="viewport" content="width=610px; height=210px;">
+    <style>
+        html {
+            width: 600px;
+            height: 200px;
+        }
+        body {
+            width: inherit;
+            height: inherit;
+            background-color: #373740;
+            border: solid 5px;
+            margin: 0;
+            font-family: Montserrat, sans-serif;
+        }
+        .card {
+            float: left;
+        }
+
+        .profile-avatar {
+            width: 175px;
+            height: 175px;
+            margin-top: 10px !important;
+            margin-left: 10px !important;
+            float:left;
+        }
+
+        .rank {
+            height: 40px;
+            line-height: 40px;
+            padding-top: 10px;
+            padding-right: 10px;
+            font-size: larger;
+        }
+
+        .info {
+            width: inherit;
+            height: 160px;
+            display: table-cell;
+            vertical-align: middle;
+            overflow: hidden;
+        }
+
+        .profile-info {
+            position: relative;
+            float:left;
+            padding-left: 15px;
+            width: 410px;
+        }
+
+        .username {
+            font-size: 16px;
+            opacity: 0.7;
+        }
+
+        .name {
+            font-size: 35px;
+            font-variant-caps: all-petite-caps;
+        }
+
+        .school {
+            display: block;
+            margin: 5px 0px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .display-meta {
+            text-align: center;
+            margin-bottom: 30px;
+            margin: 15px 0;
+        }
+
+        .display-meta .col {
+            width: 33%;
+            border-right: white 1px solid;
+            float: left;
+        }
+
+        .display-meta .col:last-child {
+            border-right: none;
+        }
+
+        .display-meta .mdc-typography--subtitle2 {
+            font-size: medium;
+            font-weight: bold;
+        }
+
+        .display-meta span {
+            display: block;
+        }
+
+        img.icon-logo {
+            width: 30px;
+            border: solid white 2px;
+            border-radius: 50%;
+            margin-left: 8px;
+            background-color: white;
+        }
+
+        span.mdc-typography--subtitle2 {
+            margin-bottom: 5px;
+        }
+
+        span.mdc-typography--caption {
+            font-size: small;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="profile-avatar auto-width <%= user.rank_class %>">
+            <img class="img-avt" src="<%= user.avatar %>">
+            <div class="img-frame"></div>
+        </div>
+        <div class="profile-info">
+            <div class="rank" style="text-align: right;">
+                <%- user.list_tournaments %>
+            </div>
+            <div class="info"> 
+                <label class="username"><%= user.username %></label><br/>
+                <label class="name"><%= user.name %></label><br/>
+                <label class="school"><%= user.school %></label>
+                <div class="display-meta">
+                    <div class="col">
+                        <span class="mdc-typography--subtitle2 rank-name"><%= user.rank_name %></span>
+                        <span class="mdc-typography--caption">Hạng</span>
+                    </div>
+                    <div class="col">
+                        <span class="mdc-typography--subtitle2 rank-value"><%= user.rank_point %></span>
+                        <span class="mdc-typography--caption">Năng lực</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -66,7 +66,7 @@ exports.accountLockAccount = async function (uid, minutes, reason) {
 	return (await result.json()).result;
 };
 
-exports.accountUnlockAccount = async function (uid, minutes, reason) {
+exports.accountUnlockAccount = async function (uid) {
 	var result = await fetch(`${functions_base_url}/accountUnblockAccount`, {
 		method: 'POST',
 		body: JSON.stringify({
