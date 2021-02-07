@@ -311,7 +311,6 @@ async function discordProcessIOTTools(msg) {
 				// send_mess.delete();
 			});
 		}
-		console.log(msg);
 		break;
 	case '/something':
 		break;
@@ -397,7 +396,6 @@ async function discordProcessIOTUpdates(msg) {
 				send_mess.react('❌')
 			]);
 		}
-		console.log(msg);
 		break;
 	case '/something':
 		break;
@@ -591,7 +589,6 @@ discordClient.on('ready', () => {
 });
 
 discordClient.on('message', async function (msg) {
-	console.log(msg);
 	discordProcessMessage(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
 	case 'iot-tools':
