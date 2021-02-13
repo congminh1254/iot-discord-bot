@@ -598,7 +598,7 @@ discordClient.on('message', async function (msg) {
 		discordProcessIOTUpdates(msg);
 		break;
 	case 'bot-logs':
-		// discordProcessBotLogs(msg);
+		discordProcessBotLogs(msg);
 		break;
 	}
 
