@@ -469,6 +469,26 @@ async function discordProcessMessage(msg) {
 	case '/help-done':
 		break;
 	}
+	// --- Check Regex ---
+	var regexp_emoji = /^:[^\s:\\\/]+?:$/;
+	if (regexp_emoji.test(content))
+		discordSendEmoji(msg);
+}
+
+
+// --- Emoji --- 
+var data_emoji = null;
+async function discordSendEmoji(msg) {
+	if (!data_emoji) {
+		data_emoji = await (await fetch('https://emoji.gg/api/')).json();
+		data_emoji = data_emoji.reduce(function(result, item, index, array) {
+			result[item.title] = item; //a, b, c
+			return result;
+		}, {});
+	}
+	var name = msg.content.replace(/:/g,'');
+	if (data_emoji[name]) 
+		msg.channel.send(data_emoji[name].image);
 }
 
 async function linkIOTAccount(member, welcome_message = true) {
@@ -649,6 +669,7 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 discordClient.on('guildMemberAdd', async function (member) {
 	linkIOTAccount(member, true);
 });
+
 
 var scheduleReview = schedule.scheduleJob('0 */6 * * *', function () {
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-updates');
