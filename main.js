@@ -274,6 +274,20 @@ async function discordProcessIOTTools(msg) {
 					value: moment(authUser.metadata.lastSignInTime).utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null
 				}, )
 				.setThumbnail(authUser.photoURL);
+			if (user.ip) {
+				var ip = user.ip.ip;
+				var users = {};
+				users = (await database.ref('/private_users/').orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
+				var value = '';
+				var cnt = 0;
+				for (var cur_user of Object.values(users))
+					if (cur_user.name && cur_user.username != username && ++cnt <= 10)
+						value += `${cur_user.name} (${cur_user.username})${(user.school) ? ' - '+ cur_user.school.schoolName : ''} - ${utils.Permission[cur_user.permission]}\n`;
+				if (value)
+					mess.addField('Account with same IP', value);
+				var joIPData = await functions.getIPData(ip);
+				mess.addField('IP', `${ip} - ${joIPData.country} - ${joIPData.as}`);
+			}
 			if (isLocked) {
 				mess.addField('Lock until', moment(user.block_time, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss'));
 				mess.addField('Lock reason', user.block_reason);
