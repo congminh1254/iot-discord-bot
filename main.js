@@ -372,9 +372,8 @@ async function discordProcessIOTUpdates(msg) {
 				}, )
 				.setThumbnail(authUser.photoURL)
 				.setFooter(uid);
-			username = user.username; 
-			if (username)
-			{
+			username = user.username;
+			if (username) {
 				var users = (await database.ref('/private_users/').orderByChild('name').startAt(user.name).endAt(user.name).once('value')).val() || {};
 				var value = '';
 				var cnt = 0;
@@ -489,19 +488,43 @@ async function discordProcessMessage(msg) {
 		discordSendEmoji(msg);
 }
 
+async function discordProcessInteraction(interaction) {
+	switch (interaction.data.name.toLowerCase()) {
+	case 'iot':
+		var id = interaction.member.user.id;
+		if (interaction.data.options)
+			id = interaction.data.options[0].value;
+		var uid = await getIOTUidFromDiscordId(id);
+		var buffer = await generateIOTProfile(uid);
+		console.log(interaction.id, interaction.token);
+		discordClient.api.interactions(interaction.id, interaction.token).callback.post({
+			data: {
+				type: 4,
+				data: {
+					content: 'hello world!',
+					flag: 64,
+					// embeds: [{
+					// 	image: buffer
+					// }]
+				}
+			}
+		});
+	}
+}
+
 
 // --- Emoji --- 
 var data_emoji = null;
 async function discordSendEmoji(msg) {
 	if (!data_emoji) {
 		data_emoji = await (await fetch('https://emoji.gg/api/')).json();
-		data_emoji = data_emoji.reduce(function(result, item, index, array) {
+		data_emoji = data_emoji.reduce(function (result, item, index, array) {
 			result[item.title] = item; //a, b, c
 			return result;
 		}, {});
 	}
-	var name = msg.content.replace(/:/g,'');
-	if (data_emoji[name]) 
+	var name = msg.content.replace(/:/g, '');
+	if (data_emoji[name])
 		msg.channel.send(data_emoji[name].image);
 }
 
@@ -623,6 +646,7 @@ discordClient.on('ready', () => {
 });
 
 discordClient.on('message', async function (msg) {
+	console.log(msg);
 	discordProcessMessage(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
 	case 'iot-tools':
@@ -646,6 +670,17 @@ discordClient.on('message', async function (msg) {
 		const [translation] = await translate.translate(msg_text, lang);
 		msg.reply(translation);
 	}
+});
+
+discordClient.ws.on('INTERACTION_CREATE', async interaction => {
+	// console.log(interaction);
+	// discordClient.api.interactions(interaction.id, interaction.token).callback.post({data: {
+	// 	type: 5,
+	// 	data: {
+
+	// 	}
+	// }});
+	discordProcessInteraction(interaction);
 });
 
 discordClient.on('messageReactionAdd', async (reaction, user) => {
@@ -759,15 +794,20 @@ app.use(express.json());
 app.listen(process.env.PORT || 8080);
 
 app.get('/', (req, res) => {
-	res.send('Hi there, I\'m running!');
-});
-
-app.post('/fb_webhook', (req, res) => {
-	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
-	res.send('Hi there, I\'m running!');
+	console.log(req);
+	res.send();
 });
 
 app.post('/discord_webhook', (req, res) => {
+	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
+	res.setHeader('Content-Type', 'application/json');
+	res.end(JSON.stringify({
+		'status': 1,
+		'message': 'success'
+	}));
+});
+
+app.post('/fb_webhook', (req, res) => {
 	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
 	res.send('Hi there, I\'m running!');
 });
