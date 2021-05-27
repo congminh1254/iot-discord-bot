@@ -593,7 +593,7 @@ function generateIOTProfile(uid) {
 				label_permission += `<img class="icon-logo" src="${tour.tourLogo}"></img>`;
 		if (label_permission.length < 5)
 			label_permission = utils.Permission[public_user.permission];
-		if (public_user.permission < 1)
+		if (public_user.permission < 1 || public_user.block_time)
 			banned = 'banned';
 		if (public_user.name.length > 20) {
 			var names = public_user.name.trim().split(' ');
