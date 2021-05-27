@@ -109,10 +109,17 @@
             font-size: small;
             opacity: 0.5;
         }
+        
+        .banned {
+            -webkit-filter: grayscale(1) blur(3px);
+        }
+        .img-banned {
+            display: block !important;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
+    <div class="card <%= user.banned %>">
         <div class="profile-avatar auto-width <%= user.rank_class %>">
             <img class="img-avt" src="<%= user.avatar %>">
             <div class="img-frame"></div>
@@ -142,5 +149,14 @@
             </div>
         </div>
     </div>
+            <img class="img-<%= user.banned %>" src="https://www.pngjoy.com/pngl/93/1967553_banned-fraud-alert-stamp-png-transparent-png.png" style="
+                z-index: 999;
+                position: fixed;
+                top: 0;
+                left: calc(100% / 2 - 100px);
+                height: 100%;
+                filter: grayscale(1);
+                display: none;
+        ">
 </body>
 </html>

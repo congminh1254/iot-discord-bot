@@ -587,11 +587,14 @@ function generateIOTProfile(uid) {
 		var public_user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
 		var tours = (await database.ref('/tournaments/').once('value')).val();
 		var label_permission = '';
+		var banned = '';
 		for (var tour of Object.values(tours))
 			if (tour.tourModerator.includes(uid))
 				label_permission += `<img class="icon-logo" src="${tour.tourLogo}"></img>`;
 		if (label_permission.length < 5)
 			label_permission = utils.Permission[public_user.permission];
+		if (public_user.permission < 1)
+			banned = 'banned';
 		if (public_user.name.length > 20) {
 			var names = public_user.name.trim().split(' ');
 			public_user.name = `${names[names.length -2]} ${names[names.length - 1]}`;
@@ -609,6 +612,7 @@ function generateIOTProfile(uid) {
 			'permission_name': utils.Permission[public_user.permission],
 			'permission': public_user.permission,
 			'list_tournaments': label_permission,
+			'banned': banned
 		};
 		var created_time = public_user.created_at || Math.floor((new Date()) / 1000);
 		var years = (new moment()).diff(moment.unix(created_time), 'years');
