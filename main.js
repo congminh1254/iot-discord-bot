@@ -455,6 +455,9 @@ async function discordProcessBotLogs(msg) {
 
 async function discordProcessMessage(msg) {
 	var content = msg.content;
+	if (Math.round(Math.random()*100) == 99) {
+		msg.react('807344101283332097');
+	}
 	switch (content.split(' ')[0].trim().toLowerCase()) {
 	case '/iot':
 		msg.react('👌');
