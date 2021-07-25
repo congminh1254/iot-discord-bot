@@ -228,12 +228,12 @@ async function discordProcessIOTTools(msg) {
 	switch (content.split(' ')[0].trim().toLowerCase()) {
 	case '/acc':
 		var username = content.substr(4).trim().toLowerCase();
-		console.log(username);
+		var name = content.substr(7).trim();
 		var data = (await database.ref('/private_users/').orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
 		if (!data)
-			data = (await database.ref('/private_users/').orderByChild('name').startAt(username).endAt(username).once('value')).val();
+			data = (await database.ref('/private_users/').orderByChild('name').startAt(name).endAt(name).once('value')).val();
 		data = data || {};
 		if (Object.values(data).length == 0) {
 			msg.channel.send('Player not found :weary:');
@@ -338,11 +338,12 @@ async function discordProcessIOTUpdates(msg) {
 	switch (content.split(' ')[0].trim().toLowerCase()) {
 	case '/review':
 		var username = content.substr(7).trim().toLowerCase();
+		var name = content.substr(7).trim();
 		var data = (await database.ref('/private_users/').orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
 		if (!data)
-			data = (await database.ref('/private_users/').orderByChild('name').startAt(username).endAt(username).once('value')).val();
+			data = (await database.ref('/private_users/').orderByChild('name').startAt(name).endAt(name).once('value')).val();
 		data = data || {};
 		if (Object.values(data).length == 0) {
 			msg.channel.send('Player not found :weary:');
