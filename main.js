@@ -232,6 +232,8 @@ async function discordProcessIOTTools(msg) {
 		var data = (await database.ref('/private_users/').orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
+		if (!data)
+			data = (await database.ref('/private_users/').orderByChild('name').startAt(username).endAt(username).once('value')).val();
 		data = data || {};
 		if (Object.values(data).length == 0) {
 			msg.channel.send('Player not found :weary:');
@@ -339,6 +341,8 @@ async function discordProcessIOTUpdates(msg) {
 		var data = (await database.ref('/private_users/').orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
+		if (!data)
+			data = (await database.ref('/private_users/').orderByChild('name').startAt(username).endAt(username).once('value')).val();
 		data = data || {};
 		if (Object.values(data).length == 0) {
 			msg.channel.send('Player not found :weary:');
