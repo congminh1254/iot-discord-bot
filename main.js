@@ -228,7 +228,7 @@ async function discordProcessIOTTools(msg) {
 	switch (content.split(' ')[0].trim().toLowerCase()) {
 	case '/acc':
 		var username = content.substr(4).trim().toLowerCase();
-		var name = content.substr(7).trim();
+		var name = content.substr(4).trim();
 		var data = (await database.ref('/private_users/').orderByChild('lower_username').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
