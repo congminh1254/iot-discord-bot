@@ -603,7 +603,7 @@ function generateIOTProfile(uid) {
 			label_permission = utils.Permission[public_user.permission];
 		if (public_user.permission < 1 || public_user.block_time)
 			banned = 'banned';
-		if (public_user.name.length > 20) {
+		if (public_user.name.length > 15) {
 			var names = public_user.name.trim().split(' ');
 			public_user.name = `${names[names.length -2]} ${names[names.length - 1]}`;
 		}
