@@ -485,6 +485,9 @@ async function discordProcessMessage(msg) {
 			}
 		}
 		break;
+	case '/update-role':
+		linkIOTAccount(msg.author, false);
+		break;
 	case '/help':
 		break;
 	case '/help-done':

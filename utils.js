@@ -85,39 +85,6 @@ exports.shuffle = function (a) {
 	return a;
 };
 
-
-exports.calcRank = function (point) {
-	var joResult = {
-		point: point,
-		rank: 1,
-		grade: 1
-	};
-	if (point >= 3500) {
-		joResult.rank = 6;
-		joResult.grade = 1;
-	} else {
-		if (point >= 3000) {
-			joResult.rank = 5;
-			joResult.grade = 5 - Math.floor((point - 3000) / 100);
-		} else if (point >= 2500) {
-			joResult.rank = 4;
-			joResult.grade = 5 - Math.floor((point - 2500) / 100);
-		} else if (point >= 2000) {
-			joResult.rank = 3;
-			joResult.grade = 5 - Math.floor((point - 2000) / 100);
-		} else if (point >= 1500) {
-			joResult.rank = 2;
-			joResult.grade = 5 - Math.floor((point - 1500) / 100);
-		} else if (point >= 1000) {
-			joResult.rank = 1;
-			joResult.grade = 5 - Math.floor((point - 1000) / 100);
-		} else {
-			joResult.rank = 0;
-			joResult.grade = 5 - Math.floor((point) / 200);
-		}
-	}
-	return joResult;
-};
 function getRankName(rank) {
 	switch (rank) {
 	case 0:
@@ -182,7 +149,7 @@ exports.getRankClass = function(rank) {
 
 exports.getRankGradeName = function(rg) {
 	if (rg != null && rg.rank != null && rg.grade != null) {
-		if (rg.rank < 6)
+		if (rg.rank < 7)
 			return getRankName(rg.rank) + ' ' + getGrade(rg.grade);
 		else
 			return getRankName(rg.rank);
