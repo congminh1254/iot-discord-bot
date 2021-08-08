@@ -486,8 +486,11 @@ async function discordProcessMessage(msg) {
 		}
 		break;
 	case '/update-role':
-		msg.react('👌');
-		linkIOTAccount(msg.author, false);
+		var member = msg.guild.members.cache.find(r => r.id === msg.author.id);
+		if (member) {
+			msg.react('👌');
+			linkIOTAccount(member, false);
+		}
 		break;
 	case '/help':
 		break;
