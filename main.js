@@ -486,6 +486,7 @@ async function discordProcessMessage(msg) {
 		}
 		break;
 	case '/update-role':
+		msg.react('👌');
 		linkIOTAccount(msg.author, false);
 		break;
 	case '/help':
