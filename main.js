@@ -28,7 +28,7 @@ const fetch = require('node-fetch');
 // 	partials: ['MESSAGE', 'CHANNEL', 'REACTION']
 // });
 
-const discordClient = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
+const discordClient = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS], partials: ['MESSAGE', 'CHANNEL', 'REACTION'], });
 
 async function discordGetCategory(category_name) {
 	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
@@ -709,11 +709,9 @@ discordClient.on('interactionCreate', async interaction => {
 });
 
 discordClient.on('messageReactionAdd', async (reaction, user) => {
-	console.log(reaction);
 	if (user.id == discordClient.user.id)
 		return;
 	// When we receive a reaction we check if the reaction is partial or not
-	console.log(reaction);
 	if (reaction.partial) {
 		try {
 			await reaction.fetch();
@@ -722,7 +720,6 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 			return;
 		}
 	}
-	console.log(reaction);
 	if (reaction.message.embeds.length > 0) {
 		var embed = reaction.message.embeds[0];
 		console.log(embed.title);
