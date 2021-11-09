@@ -1,4 +1,4 @@
-const Discord = require('discord.js');
+const { MessageEmbed, Client, Intents } = require('discord.js');
 const express = require('express');
 const admin = require('firebase-admin');
 var config = JSON.parse(process.env.FIREBASE_CONFIG);
@@ -24,22 +24,24 @@ const fetch = require('node-fetch');
 
 
 // ---------Discord-------------- //
-const discordClient = new Discord.Client({
-	partials: ['MESSAGE', 'CHANNEL', 'REACTION']
-});
+// const discordClient = new Discord.Client({
+// 	partials: ['MESSAGE', 'CHANNEL', 'REACTION']
+// });
+
+const discordClient = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 
 async function discordGetCategory(category_name) {
 	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	var category = null;
 	if (category_name) {
-		category = guild.channels.cache.find(c => c.name.toLowerCase().trim() == category_name.toLowerCase().trim() && c.type == 'category');
+		category = guild.channels.cache.find(c => c.name.toLowerCase().trim() == category_name.toLowerCase().trim() && c.type == 'GUILD_CATEGORY');
 		if (!category)
 			throw new Error(`Category channel ${category_name} does not exist`);
 	}
 	return category;
 }
 
-async function discordCreateChannel(name, type = 'voice', category_name = null) {
+async function discordCreateChannel(name, type = 'GUILD_VOICE', category_name = null) {
 	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	var category = await discordGetCategory(category_name);
 	var voice_channel = null;
@@ -63,7 +65,7 @@ async function discordCreateChannel(name, type = 'voice', category_name = null) 
 	return invite;
 }
 
-async function discordRemoveChannel(name, type = 'voice') {
+async function discordRemoveChannel(name, type = 'GUILD_VOICE') {
 	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	await guild.channels.cache.forEach(async function (channel) {
 		if (channel.type == type && channel.name.trim().toLowerCase() == name.trim().toLowerCase())
@@ -71,7 +73,7 @@ async function discordRemoveChannel(name, type = 'voice') {
 	});
 }
 
-async function discordClearChannel(name = [], type = 'voice', category_name = null) {
+async function discordClearChannel(name = [], type = 'GUILD_VOICE', category_name = null) {
 	var guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID, true);
 	await guild.channels.cache.forEach(async function (channel) {
 		if (channel.type == type && !name.includes(channel.name) &&
@@ -90,24 +92,23 @@ async function discordDeleteUser(msg, uid) {
 	const filter = (reaction, user) => {
 		return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
 	};
-	await confirm_msg.awaitReactions(filter, {
+	await confirm_msg.awaitReactions({filter,
 		max: 1,
 		time: 60000,
 		errors: ['time']
+	}).then(collected => {
+		const reaction = collected.first();
+		switch (reaction.emoji.name) {
+		case '✅':
+			functions.accountDeleteAccount(uid).then(function (result) {
+				confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
+			});
+			break;
+		case '❎':
+			confirm_msg.channel.send('Cancel Deleted!');
+			break;
+		}
 	})
-		.then(collected => {
-			const reaction = collected.first();
-			switch (reaction.emoji.name) {
-			case '✅':
-				functions.accountDeleteAccount(uid).then(function (result) {
-					confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
-				});
-				break;
-			case '❎':
-				confirm_msg.channel.send('Cancel Deleted!');
-				break;
-			}
-		})
 		.catch(collected => {
 			confirm_msg.channel.send('You do not have any react.');
 		});
@@ -124,15 +125,14 @@ async function discordLockAccount(msg, uid) {
 		const filter = (reaction, user) => {
 			return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
 		};
-		var collected = await confirm_msg.awaitReactions(filter, {
+		var collected = await confirm_msg.awaitReactions({filter,
 			max: 1,
 			time: 60000,
 			errors: ['time']
-		})
-			.catch(collected => {
-				confirm_msg.channel.send('```You do not have any react.```');
-				throw new Error();
-			});
+		}).catch(collected => {
+			confirm_msg.channel.send('```You do not have any react.```');
+			throw new Error();
+		});
 		const reaction = collected.first();
 		console.log(reaction.id);
 		switch (reaction.emoji.name) {
@@ -200,24 +200,23 @@ async function discordUnlockAccount(msg, uid) {
 	const filter = (reaction, user) => {
 		return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
 	};
-	await confirm_msg.awaitReactions(filter, {
+	await confirm_msg.awaitReactions({filter,
 		max: 1,
 		time: 60000,
 		errors: ['time']
+	}).then(collected => {
+		const reaction = collected.first();
+		switch (reaction.emoji.name) {
+		case '✅':
+			functions.accountUnlockAccount(uid).then(function (result) {
+				confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
+			});
+			break;
+		case '❎':
+			confirm_msg.channel.send('Cancel Unlocked!');
+			break;
+		}
 	})
-		.then(collected => {
-			const reaction = collected.first();
-			switch (reaction.emoji.name) {
-			case '✅':
-				functions.accountUnlockAccount(uid).then(function (result) {
-					confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
-				});
-				break;
-			case '❎':
-				confirm_msg.channel.send('Cancel Unlocked!');
-				break;
-			}
-		})
 		.catch(collected => {
 			confirm_msg.channel.send('You do not have any react.');
 		});
@@ -242,7 +241,7 @@ async function discordProcessIOTTools(msg) {
 			var uid = Object.keys(data)[0];
 			var authUser = await auth.getUser(uid);
 			var isLocked = (user.block_time) ? true : false;
-			var mess = new Discord.MessageEmbed()
+			var mess = new MessageEmbed()
 				.setColor('#e9a327')
 				.setTitle('Player Profile')
 				.addFields({
@@ -294,7 +293,7 @@ async function discordProcessIOTTools(msg) {
 				mess.addField('Lock until', moment(user.block_time, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss'));
 				mess.addField('Lock reason', user.block_reason);
 			}
-			var send_mess = await msg.channel.send(mess);
+			var send_mess = await msg.channel.send({'embeds':[mess]});
 			Promise.all([
 				(!isLocked) ? send_mess.react('🔒') : send_mess.react('🔓'),
 				send_mess.react('❌')
@@ -302,25 +301,24 @@ async function discordProcessIOTTools(msg) {
 				const filter = (reaction, user) => {
 					return ['🔒', '🔓', '❌'].includes(reaction.emoji.name) && user.id != send_mess.author.id;
 				};
-				await send_mess.awaitReactions(filter, {
+				await send_mess.awaitReactions({filter,
 					max: 1,
 					time: 60000,
 					errors: ['time']
+				}).then(collected => {
+					const reaction = collected.first();
+					switch (reaction.emoji.name) {
+					case '🔒':
+						discordLockAccount(send_mess, uid);
+						break;
+					case '🔓':
+						discordUnlockAccount(send_mess, uid);
+						break;
+					case '❌':
+						discordDeleteUser(send_mess, uid);
+						break;
+					}
 				})
-					.then(collected => {
-						const reaction = collected.first();
-						switch (reaction.emoji.name) {
-						case '🔒':
-							discordLockAccount(send_mess, uid);
-							break;
-						case '🔓':
-							discordUnlockAccount(send_mess, uid);
-							break;
-						case '❌':
-							discordDeleteUser(send_mess, uid);
-							break;
-						}
-					})
 					.catch(collected => {
 						send_mess.reply('You do not have any react.');
 					});
@@ -351,7 +349,7 @@ async function discordProcessIOTUpdates(msg) {
 			var user = Object.values(data)[0];
 			var uid = Object.keys(data)[0];
 			var authUser = await auth.getUser(uid);
-			var mess = new Discord.MessageEmbed()
+			var mess = new MessageEmbed()
 				.setColor('#e9a327')
 				.setTitle('Player Review')
 				.addFields({
@@ -408,7 +406,9 @@ async function discordProcessIOTUpdates(msg) {
 				await msg.channel.send(`<@${keys[Math.floor(Math.random() * keys.length)]}>`);
 			} else
 				await msg.channel.send(`<@${msg.author.id}>`);
-			var send_mess = await msg.channel.send(mess);
+			var send_mess = await msg.channel.send({
+				'embeds': [mess]
+			});
 			Promise.all([
 				send_mess.react('✅'),
 				send_mess.react('❌')
@@ -428,24 +428,24 @@ async function discordProcessBotLogs(msg) {
 		var member = msg.guild.members.cache.find(r => r.id === uid);
 		if (member) {
 			linkIOTAccount(member, true);
-			msg.delete();
 		}
+		msg.delete();
 		break;
 	case '/unlink':
 		var uid = msg.content.split(' ')[2];
 		var member = msg.guild.members.cache.find(r => r.id === uid);
 		if (member) {
 			linkIOTAccount(member, false);
-			msg.delete();
 		}
+		msg.delete();
 		break;
 	case '/relink':
 		var uid = msg.content.split(' ')[2];
 		var member = msg.guild.members.cache.find(r => r.id === uid);
 		if (member) {
 			linkIOTAccount(member, false);
-			msg.delete();
 		}
+		msg.delete();
 		break;
 	case '/relink-all':
 		msg.guild.members.cache.forEach(async function (member) {
@@ -495,22 +495,21 @@ async function discordProcessMessage(msg) {
 	case '/support':
 		msg.react('👌');
 		var caseId = Math.floor(Math.random() * 1000000);
-		await discordCreateChannel(`case_${caseId}`, 'text', 'help channels');
+		await discordCreateChannel(`case_${caseId}`, 'GUILD_TEXT', 'help channels');
 		var channel = msg.guild.channels.cache.find(r => r.name === `case_${caseId}`);
-		await channel.updateOverwrite(msg.author, {
+		await channel.permissionOverwrites.edit(msg.author, {
 			'VIEW_CHANNEL': true,
-			'SEND_MESSAGES': true,
-			'READ_MESSAGES': true
+			'SEND_MESSAGES': true
 		});
 		// send inital message for support to channel
-		var mess = new Discord.MessageEmbed()
+		var mess = new MessageEmbed()
 			.setColor('#0099ff')
 			.setTitle(`Support Request - Case ${caseId}`)
 			.setDescription(`${msg.author} gửi yêu cầu hỗ trợ, vui lòng đợi quản trị viên trả lời.`)
 			.setTimestamp();
 		mess.addField('Tham gia', `<@${msg.author.id}> @here`);
 		mess.addField('Hướng dẫn', 'Bạn hãy giải thích vấn đề gặp phải và chờ quản trị viên giải quyết nhé.\nSau khi kết thúc, gõ /done để xóa kênh.');
-		await channel.send(mess);
+		await channel.send({embeds: [mess]});
 		await channel.send(`<@${msg.author.id}>`);
 		if (msg.member.roles.cache.find(r => r.name === 'admin') || msg.member.roles.cache.find(r => r.name === 'moderator') || msg.member.roles.cache.find(r => r.name === 'verified-player')) {
 			await channel.send(`/iot <@${msg.author.id}>`);
@@ -520,7 +519,7 @@ async function discordProcessMessage(msg) {
 	case '/done':
 		msg.react('👌');
 		if (msg.channel.name.startsWith('case_')) {
-			await discordRemoveChannel(msg.channel.name, 'text');
+			await discordRemoveChannel(msg.channel.name, 'GUILD_TEXT');
 		}
 		break;
 	}
@@ -691,7 +690,7 @@ discordClient.on('ready', () => {
 	});
 });
 
-discordClient.on('message', async function (msg) {
+discordClient.on('messageCreate', async function (msg) {
 	console.log(msg);
 	discordProcessMessage(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
@@ -811,16 +810,19 @@ async function sendChatMessage(path, message) {
 }
 
 var refReviseRoom = database.ref('/revise/room/');
-refReviseRoom.on('child_added', function (snap) {
-	discordCreateChannel(`Room ${snap.key}`, 'voice', 'Revise Channels').then(function (invite) {
-		if (process.env.PUBLIC == 'true')
-			sendChatMessage(`/revise/chat/${snap.key}`, `Tham gia Discord: ${invite} Kênh thoại Phòng ${snap.key}!`);
-	});
-});
 
-refReviseRoom.on('child_removed', function (snap) {
-	discordRemoveChannel(`Room ${snap.key}`);
-});
+setTimeout(function() {
+	refReviseRoom.on('child_added', function (snap) {
+		discordCreateChannel(`Room ${snap.key}`, 'GUILD_VOICE', 'Revise Channels').then(function (invite) {
+			if (process.env.PUBLIC == 'true')
+				sendChatMessage(`/revise/chat/${snap.key}`, `Tham gia Discord: ${invite} Kênh thoại Phòng ${snap.key}!`);
+		});
+	});
+
+	refReviseRoom.on('child_removed', function (snap) {
+		discordRemoveChannel(`Room ${snap.key}`);
+	});
+}, 10000);
 
 setInterval(function () {
 	refReviseRoom.once('value', function (snap) {
@@ -829,7 +831,7 @@ setInterval(function () {
 			return `Room ${key}`;
 		});
 		console.log(rooms);
-		discordClearChannel(rooms, 'voice', 'Revise Channels');
+		discordClearChannel(rooms, 'GUILD_VOICE', 'Revise Channels');
 	});
 }, 300000);
 
