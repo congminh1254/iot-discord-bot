@@ -34,7 +34,7 @@ async function discordGetCategory(category_name) {
 	if (category_name) {
 		category = guild.channels.cache.find(c => c.name.toLowerCase().trim() == category_name.toLowerCase().trim() && c.type == 'category');
 		if (!category)
-			throw new Error('Category channel does not exist');
+			throw new Error(`Category channel ${category_name} does not exist`);
 	}
 	return category;
 }
@@ -492,9 +492,36 @@ async function discordProcessMessage(msg) {
 			linkIOTAccount(member, false);
 		}
 		break;
-	case '/help':
+	case '/support':
+		msg.react('👌');
+		var caseId = Math.floor(Math.random() * 1000000);
+		await discordCreateChannel(`case_${caseId}`, 'text', 'help channels');
+		var channel = msg.guild.channels.cache.find(r => r.name === `case_${caseId}`);
+		await channel.updateOverwrite(msg.author, {
+			'VIEW_CHANNEL': true,
+			'SEND_MESSAGES': true,
+			'READ_MESSAGES': true
+		});
+		// send inital message for support to channel
+		var mess = new Discord.MessageEmbed()
+			.setColor('#0099ff')
+			.setTitle(`Support Request - Case ${caseId}`)
+			.setDescription(`${msg.author} gửi yêu cầu hỗ trợ, vui lòng đợi quản trị viên trả lời.`)
+			.setTimestamp();
+		mess.addField('Tham gia', `<@${msg.author.id}> @here`);
+		mess.addField('Hướng dẫn', 'Bạn hãy giải thích vấn đề gặp phải và chờ quản trị viên giải quyết nhé.\nSau khi kết thúc, gõ /done để xóa kênh.');
+		await channel.send(mess);
+		await channel.send(`<@${msg.author.id}>`);
+		if (msg.member.roles.cache.find(r => r.name === 'admin') || msg.member.roles.cache.find(r => r.name === 'moderator') || msg.member.roles.cache.find(r => r.name === 'verified-player')) {
+			await channel.send(`/iot <@${msg.author.id}>`);
+		}
+		await msg.reply(`Vui lòng gửi tin nhắn vào kênh <#${channel.id}> để giải quyết vấn đề.`);
 		break;
-	case '/help-done':
+	case '/done':
+		msg.react('👌');
+		if (msg.channel.name.startsWith('case_')) {
+			await discordRemoveChannel(msg.channel.name, 'text');
+		}
 		break;
 	}
 	// --- Check Regex ---
