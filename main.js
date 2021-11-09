@@ -1,4 +1,4 @@
-const { MessageEmbed, Client, Intents } = require('discord.js');
+const { MessageEmbed, Client, Intents, MessageActionRow, MessageButton } = require('discord.js');
 const express = require('express');
 const admin = require('firebase-admin');
 var config = JSON.parse(process.env.FIREBASE_CONFIG);
@@ -82,42 +82,12 @@ async function discordClearChannel(name = [], type = 'GUILD_VOICE', category_nam
 	});
 }
 
-async function discordDeleteUser(msg, uid) {
-	var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
-	var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Delete account ${user.name} (${user.username})\`\`\``);
-	await Promise.all([
-		confirm_msg.react('✅'),
-		confirm_msg.react('❎'),
-	]);
-	const filter = (reaction, user) => {
-		return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
-	};
-	await confirm_msg.awaitReactions({filter,
-		max: 1,
-		time: 60000,
-		errors: ['time']
-	}).then(collected => {
-		const reaction = collected.first();
-		switch (reaction.emoji.name) {
-		case '✅':
-			functions.accountDeleteAccount(uid).then(function (result) {
-				confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
-			});
-			break;
-		case '❎':
-			confirm_msg.channel.send('Cancel Deleted!');
-			break;
-		}
-	})
-		.catch(collected => {
-			confirm_msg.channel.send('You do not have any react.');
-		});
-}
-
-async function discordLockAccount(msg, uid) {
+async function discordDeleteUser(interaction, uid) {
 	try {
+		var msg = interaction.message;
+		msg.delete();
 		var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
-		var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Lock account ${user.name} (${user.username})\`\`\``);
+		var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Delete account ${user.name} (${user.username})\`\`\``);
 		await Promise.all([
 			confirm_msg.react('✅'),
 			confirm_msg.react('❎'),
@@ -125,60 +95,95 @@ async function discordLockAccount(msg, uid) {
 		const filter = (reaction, user) => {
 			return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
 		};
+		await confirm_msg.awaitReactions({filter,
+			max: 1,
+			time: 60000,
+			errors: ['time']
+		}).then(collected => {
+			const reaction = collected.first();
+			switch (reaction.emoji.name) {
+			case '✅':
+				functions.accountDeleteAccount(uid).then(function (result) {
+					interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+				});
+				break;
+			case '❎':
+				interaction.editReply('Cancel Deleted!');
+				break;
+			}
+		})
+			.catch(() => {
+				throw new Error('You do not have any react.');
+			});
+		confirm_msg.delete();
+	} catch (err) {
+		await interaction.editReply(`Request error! ${err.message || ''}`);
+	}
+}
+
+async function discordLockAccount(interaction, uid) {
+	try {
+		var msg = interaction.message;
+		msg.delete();
+		var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+		var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Lock account ${user.name} (${user.username})\`\`\``);
+		await Promise.all([
+			confirm_msg.react('✅'),
+			confirm_msg.react('❎'),
+		]);
+		const filter = (reaction, user) => {
+			return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id && user.id === interaction.user.id;
+		};
 		var collected = await confirm_msg.awaitReactions({filter,
 			max: 1,
 			time: 60000,
 			errors: ['time']
 		}).catch(collected => {
-			confirm_msg.channel.send('```You do not have any react.```');
-			throw new Error();
+			throw new Error('```You do not have any react.```');
 		});
+		confirm_msg.delete();
 		const reaction = collected.first();
-		console.log(reaction.id);
+		const filter2 = m => m.author.id.equals(interaction.user.id);
 		switch (reaction.emoji.name) {
 		case '✅':
 			var days_msg = await confirm_msg.channel.send('```How many days?```');
-			collected = await days_msg.channel.awaitMessages((message, user) => {
-				return user.id === reaction.id;
-			}, {
+			collected = await days_msg.channel.awaitMessages({filter2,
 				max: 1,
 				time: 60000,
 				errors: ['time']
-			})
-				.catch(collected => {
-					throw new Error('```You do not have any message.```');
-				});
+			}).catch(collected => {
+				throw new Error('```You do not have any message.```');
+			});
+			days_msg.delete();
 			var msg_days_reply = collected.first();
 			var days = parseInt(msg_days_reply.content);
+			msg_days_reply.delete();
 			if (isNaN(days))
 				throw new Error('```Number of days is not valid.```');
-
 			var reason_msg = await confirm_msg.channel.send(`\`\`\`You'll lock this account ${days} day(s). Why?\`\`\``);
-			collected = await reason_msg.channel.awaitMessages((message, user) => {
-				return user.id === reaction.id;
-			}, {
+			collected = await reason_msg.channel.awaitMessages({filter2,
 				max: 1,
 				time: 60000,
 				errors: ['time']
-			})
-				.catch(collected => {
-					throw new Error('```You do not have any message.```');
-				});
+			}).catch(() => {
+				throw new Error('```You do not have any message.```');
+			});
+			reason_msg.delete();
 			var msg_reason_reply = collected.first();
 			var reason = msg_reason_reply.content;
-			await confirm_msg.channel.send(`\`\`\`You'll lock this account ${days} day(s). Reason: ${reason}.\`\`\``);
-
+			msg_reason_reply.delete();
+			var noti_msg = await confirm_msg.channel.send(`\`\`\`You'll lock this account ${days} day(s). Reason: ${reason}.\`\`\``);
 			functions.accountLockAccount(uid, days * 24 * 60, reason).then(function (result) {
-				confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
+				interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+				noti_msg.delete();
 			});
 			break;
 		case '❎':
-			confirm_msg.channel.send('```Cancel Locked!```');
+			interaction.editReply('```Cancel Locked!```');
 			break;
 		}
 	} catch (err) {
-		console.log(err);
-		msg.channel.send(`Request error! ${err.message || ''}`);
+		await interaction.editReply(`Request error! ${err.message || ''}`);
 	}
 }
 
@@ -190,36 +195,42 @@ async function getIOTUidFromDiscordId(discord_id) {
 	return null;
 }
 
-async function discordUnlockAccount(msg, uid) {
-	var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
-	var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Unlock account ${user.name} (${user.username})\`\`\``);
-	await Promise.all([
-		confirm_msg.react('✅'),
-		confirm_msg.react('❎'),
-	]);
-	const filter = (reaction, user) => {
-		return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
-	};
-	await confirm_msg.awaitReactions({filter,
-		max: 1,
-		time: 60000,
-		errors: ['time']
-	}).then(collected => {
-		const reaction = collected.first();
-		switch (reaction.emoji.name) {
-		case '✅':
-			functions.accountUnlockAccount(uid).then(function (result) {
-				confirm_msg.channel.send(`\`\`\`${result.message}\`\`\``);
-			});
-			break;
-		case '❎':
-			confirm_msg.channel.send('Cancel Unlocked!');
-			break;
-		}
-	})
-		.catch(collected => {
-			confirm_msg.channel.send('You do not have any react.');
+async function discordUnlockAccount(interaction, uid) {
+	try {
+		var msg = interaction.message;
+		msg.delete();
+		var user = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+		var confirm_msg = await msg.channel.send(`\`\`\`Are you sure? Unlock account ${user.name} (${user.username})\`\`\``);
+		await Promise.all([
+			confirm_msg.react('✅'),
+			confirm_msg.react('❎'),
+		]);
+		const filter = (reaction, user) => {
+			return ['✅', '❎'].includes(reaction.emoji.name) && user.id != confirm_msg.author.id;
+		};
+		await confirm_msg.awaitReactions({filter,
+			max: 1,
+			time: 60000,
+			errors: ['time']
+		}).then(collected => {
+			const reaction = collected.first();
+			switch (reaction.emoji.name) {
+			case '✅':
+				functions.accountUnlockAccount(uid).then(function (result) {
+					interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+				});
+				break;
+			case '❎':
+				interaction.editReplys('```Cancel Unlocked!```');
+				break;
+			}
+		}).catch(() => {
+			throw new Error('You do not have any react.');
 		});
+		confirm_msg.delete();
+	} catch (err) {
+		await interaction.editReply(`Request error! ${err.message || ''}`);
+	}
 }
 
 async function discordProcessIOTTools(msg) {
@@ -289,40 +300,20 @@ async function discordProcessIOTTools(msg) {
 				var joIPData = await functions.getIPData(ip);
 				mess.addField('IP', `${ip} - ${joIPData.country} - ${joIPData.as}`);
 			}
+
 			if (isLocked) {
 				mess.addField('Lock until', moment(user.block_time, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss'));
 				mess.addField('Lock reason', user.block_reason);
 			}
-			var send_mess = await msg.channel.send({'embeds':[mess]});
-			Promise.all([
-				(!isLocked) ? send_mess.react('🔒') : send_mess.react('🔓'),
-				send_mess.react('❌')
-			]).then(async function () {
-				const filter = (reaction, user) => {
-					return ['🔒', '🔓', '❌'].includes(reaction.emoji.name) && user.id != send_mess.author.id;
-				};
-				await send_mess.awaitReactions({filter,
-					max: 1,
-					time: 60000,
-					errors: ['time']
-				}).then(collected => {
-					const reaction = collected.first();
-					switch (reaction.emoji.name) {
-					case '🔒':
-						discordLockAccount(send_mess, uid);
-						break;
-					case '🔓':
-						discordUnlockAccount(send_mess, uid);
-						break;
-					case '❌':
-						discordDeleteUser(send_mess, uid);
-						break;
-					}
-				})
-					.catch(collected => {
-						send_mess.reply('You do not have any react.');
-					});
-				// send_mess.delete();
+			const row = new MessageActionRow();
+			if (!isLocked)
+				row.addComponents(new MessageButton().setCustomId(`lock_${uid}`).setStyle('PRIMARY').setLabel('Khóa'));
+			else
+				row.addComponents(new MessageButton().setCustomId(`unlock_${uid}`).setStyle('PRIMARY').setLabel('Mở khóa'));
+			row.addComponents(new MessageButton().setCustomId(`delete_${uid}`).setStyle('DANGER').setLabel('Xóa'));
+			var send_msg = await msg.channel.send({
+				embeds: [mess],
+				components: [row]
 			});
 		}
 		break;
@@ -406,13 +397,21 @@ async function discordProcessIOTUpdates(msg) {
 				await msg.channel.send(`<@${keys[Math.floor(Math.random() * keys.length)]}>`);
 			} else
 				await msg.channel.send(`<@${msg.author.id}>`);
-			var send_mess = await msg.channel.send({
-				'embeds': [mess]
+			const row = new MessageActionRow().addComponents(
+				new MessageButton()
+					.setCustomId(`approve_${uid}`)
+					.setLabel('Chấp nhận')
+					.setStyle('PRIMARY'),
+			).addComponents(
+				new MessageButton()
+					.setCustomId(`reject_${uid}`)
+					.setLabel('Từ chối')
+					.setStyle('DANGER'),
+			);
+			await msg.channel.send({
+				'embeds': [mess],
+				'components': [row]
 			});
-			Promise.all([
-				send_mess.react('✅'),
-				send_mess.react('❌')
-			]);
 		}
 		break;
 	case '/something':
@@ -629,112 +628,112 @@ discordClient.on('messageCreate', async function (msg) {
 });
 
 discordClient.on('interactionCreate', async interaction => {
-	if (!interaction.isCommand()) return;
+	if (interaction.isCommand()) {
 
-	const { commandName } = interaction;
+		const { commandName } = interaction;
 
-	if (commandName === 'ping') {
-		await interaction.reply('Pong!');
-	} else if (commandName === 'server') {
-		await interaction.reply(`Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}`);
-	} else if (commandName === 'user') {
-		await interaction.reply(`Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`);
-	} else if (commandName === 'iot') {
-		console.log(interaction);
-		await interaction.deferReply();
-		var user = interaction.options.getMember('user');
-		var id = null;
-		if (!user)
-			id = interaction.user.id;
-		else
-			id = user.id;
-		var uid = await getIOTUidFromDiscordId(id);
-		if (!uid)
-			return interaction.editReply('User not found!');
-		var buffer = await generateIOTProfile(uid);
-		await interaction.editReply({
-			files: [buffer]
-		});
-	} else if (commandName === 'support') {
-		await interaction.deferReply();
-		var caseId = Math.floor(Math.random() * 1000000);
-		await discordCreateChannel(`case_${caseId}`, 'GUILD_TEXT', 'help channels');
-		var channel = interaction.guild.channels.cache.find(r => r.name === `case_${caseId}`);
-		await channel.permissionOverwrites.edit(interaction.user, {
-			'VIEW_CHANNEL': true,
-			'SEND_MESSAGES': true
-		});
-		// send inital message for support to channel
-		var mess = new MessageEmbed()
-			.setColor('#0099ff')
-			.setTitle(`Support Request - Case ${caseId}`)
-			.setDescription(`${interaction.user} gửi yêu cầu hỗ trợ, vui lòng đợi quản trị viên trả lời.`)
-			.setTimestamp();
-		mess.addField('Tham gia', `<@${interaction.user.id}> @here`);
-		mess.addField('Hướng dẫn', 'Bạn hãy giải thích vấn đề gặp phải và chờ quản trị viên giải quyết nhé.\nSau khi kết thúc, gõ /done để xóa kênh.');
-		await channel.send({embeds: [mess]});
-		await channel.send(`<@${interaction.user.id}>`);
-		const userId = interaction.user.id;
-		const user = interaction.guild.members.cache.find(r => r.id === userId);
-		if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
-			uid = await getIOTUidFromDiscordId(userId);
+		if (commandName === 'ping') {
+			await interaction.reply('Pong!');
+		} else if (commandName === 'server') {
+			await interaction.reply(`Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}`);
+		} else if (commandName === 'user') {
+			await interaction.reply(`Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`);
+		} else if (commandName === 'iot') {
+			console.log(interaction);
+			await interaction.deferReply();
+			var user = interaction.options.getMember('user');
+			var id = null;
+			if (!user)
+				id = interaction.user.id;
+			else
+				id = user.id;
+			var uid = await getIOTUidFromDiscordId(id);
 			if (!uid)
-				return channel.send('User not found!');
+				return interaction.editReply('User not found!');
+			var buffer = await generateIOTProfile(uid);
+			await interaction.editReply({
+				files: [buffer]
+			});
+		} else if (commandName === 'support') {
+			await interaction.deferReply();
+			var caseId = Math.floor(Math.random() * 1000000);
+			await discordCreateChannel(`case_${caseId}`, 'GUILD_TEXT', 'help channels');
+			var channel = interaction.guild.channels.cache.find(r => r.name === `case_${caseId}`);
+			await channel.permissionOverwrites.edit(interaction.user, {
+				'VIEW_CHANNEL': true,
+				'SEND_MESSAGES': true
+			});
+			// send inital message for support to channel
+			var mess = new MessageEmbed()
+				.setColor('#0099ff')
+				.setTitle(`Support Request - Case ${caseId}`)
+				.setDescription(`${interaction.user} gửi yêu cầu hỗ trợ, vui lòng đợi quản trị viên trả lời.`)
+				.setTimestamp();
+			mess.addField('Tham gia', `<@${interaction.user.id}> @here`);
+			mess.addField('Hướng dẫn', 'Bạn hãy giải thích vấn đề gặp phải và chờ quản trị viên giải quyết nhé.\nSau khi kết thúc, gõ /done để xóa kênh.');
+			await channel.send({embeds: [mess]});
+			await channel.send(`<@${interaction.user.id}>`);
+			const userId = interaction.user.id;
+			const user = interaction.guild.members.cache.find(r => r.id === userId);
+			if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
+				uid = await getIOTUidFromDiscordId(userId);
+				if (!uid)
+					return channel.send('User not found!');
+				else {
+					buffer = await generateIOTProfile(uid);
+					await channel.send({
+						files: [buffer]
+					});
+				}
+			}
+			await interaction.editReply(`Vui lòng gửi tin nhắn vào kênh <#${channel.id}> để giải quyết vấn đề.`);
+		} else if (commandName === 'done') {
+			if (interaction.channel.name.startsWith('case_')) {
+				await interaction.reply('Vui lòng đợi!');
+				await discordRemoveChannel(interaction.channel.name, 'GUILD_TEXT');
+			} else {
+				interaction.reply('Kênh không hợp lệ!');
+			}
+		} else if (commandName === 'update-role') {
+			await interaction.deferReply();
+			var member = interaction.guild.members.cache.find(r => r.id === interaction.user.id);
+			uid = await getIOTUidFromDiscordId(member.id);
+			if (!uid)
+				interaction.editReply('Tài khoản chưa liên kết với IOT!');
 			else {
-				buffer = await generateIOTProfile(uid);
-				await channel.send({
-					files: [buffer]
-				});
+				linkIOTAccount(member, false);
+				interaction.editReply('Cập nhật thành công!');
 			}
 		}
-		await interaction.editReply(`Vui lòng gửi tin nhắn vào kênh <#${channel.id}> để giải quyết vấn đề.`);
-	} else if (commandName === 'done') {
-		if (interaction.channel.name.startsWith('case_')) {
-			await interaction.reply('Vui lòng đợi!');
-			await discordRemoveChannel(interaction.channel.name, 'GUILD_TEXT');
-		} else {
-			interaction.reply('Kênh không hợp lệ!');
-		}
-	} else if (commandName === 'update-role') {
-		await interaction.deferReply();
-		var member = interaction.guild.members.cache.find(r => r.id === interaction.user.id);
-		uid = await getIOTUidFromDiscordId(member.id);
-		if (!uid)
-			interaction.editReply('Tài khoản chưa liên kết với IOT!');
-		else {
-			linkIOTAccount(member, false);
-			interaction.editReply('Cập nhật thành công!');
-		}
-	}
-});
-
-discordClient.on('messageReactionAdd', async (reaction, user) => {
-	if (user.id == discordClient.user.id)
-		return;
-	// When we receive a reaction we check if the reaction is partial or not
-	if (reaction.partial) {
-		try {
-			await reaction.fetch();
-		} catch (error) {
-			console.error('Something went wrong when fetching the message: ', error);
-			return;
-		}
-	}
-	if (reaction.message.embeds.length > 0) {
-		var embed = reaction.message.embeds[0];
-		console.log(embed.title);
-		switch (embed.title.toLowerCase()) {
-		case 'player review':
-			if (reaction.emoji.name == '✅')
-				functions.accountApproveAccount(embed.footer.text).then(function (result) {
-					reaction.message.channel.send(`\`\`\`${result.message}\`\`\``);
-					reaction.message.delete();
-				});
-			else if (reaction.emoji.name == '❌')
-				functions.accountRejectAccount(embed.footer.text).then(function (result) {
-					reaction.message.channel.send(`\`\`\`${result.message}\`\`\``);
-					reaction.message.delete();
-				});
+	} else if (interaction.isButton()) {
+		var action = interaction.customId.split('_')[0];
+		var params = interaction.customId.split('_');
+		switch (action) {
+		case 'approve':
+			await interaction.deferReply();
+			await functions.accountApproveAccount(params[1]).then(async function (result) {
+				await interaction.editReply(`\`\`\`${result.message}\`\`\``);
+				await interaction.message.delete();
+			});
+			break;
+		case 'reject':
+			await interaction.deferReply();
+			await functions.accountRejectAccount(params[1]).then(async function (result) {
+				await interaction.editReply(`\`\`\`${result.message}\`\`\``);
+				await interaction.message.delete();
+			});
+			break;
+		case 'lock':
+			await interaction.deferReply();
+			await discordLockAccount(interaction, params[1]);
+			break;
+		case 'unlock':
+			await interaction.deferReply();
+			await discordUnlockAccount(interaction, params[1]);
+			break;
+		case 'delete':
+			await interaction.deferReply();
+			await discordDeleteUser(interaction, params[1]);
 			break;
 		}
 	}
@@ -743,7 +742,6 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 discordClient.on('guildMemberAdd', async function (member) {
 	linkIOTAccount(member, true);
 });
-
 
 var scheduleReview = schedule.scheduleJob('0 */6 * * *', function () {
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-updates');
