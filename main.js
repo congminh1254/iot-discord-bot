@@ -463,96 +463,11 @@ async function discordProcessMessage(msg) {
 	if (Math.round(Math.random()*100) == 99) {
 		// msg.react('');
 	}
-	switch (content.split(' ')[0].trim().toLowerCase()) {
-	case '/iot':
-		msg.react('👌');
-		if (msg.mentions.users.size < 1) {
-			var id = msg.author.id;
-			var uid = await getIOTUidFromDiscordId(id);
-			var buffer = await generateIOTProfile(uid);
-			msg.channel.send({
-				files: [buffer]
-			});
-		} else {
-			for (var user of msg.mentions.users.values()) {
-				console.log(user);
-				var id = user.id;
-				var uid = await getIOTUidFromDiscordId(id);
-				var buffer = await generateIOTProfile(uid);
-				msg.channel.send({
-					files: [buffer]
-				});
-			}
-		}
-		break;
-	case '/update-role':
-		var member = msg.guild.members.cache.find(r => r.id === msg.author.id);
-		if (member) {
-			msg.react('👌');
-			linkIOTAccount(member, false);
-		}
-		break;
-	case '/support':
-		msg.react('👌');
-		var caseId = Math.floor(Math.random() * 1000000);
-		await discordCreateChannel(`case_${caseId}`, 'GUILD_TEXT', 'help channels');
-		var channel = msg.guild.channels.cache.find(r => r.name === `case_${caseId}`);
-		await channel.permissionOverwrites.edit(msg.author, {
-			'VIEW_CHANNEL': true,
-			'SEND_MESSAGES': true
-		});
-		// send inital message for support to channel
-		var mess = new MessageEmbed()
-			.setColor('#0099ff')
-			.setTitle(`Support Request - Case ${caseId}`)
-			.setDescription(`${msg.author} gửi yêu cầu hỗ trợ, vui lòng đợi quản trị viên trả lời.`)
-			.setTimestamp();
-		mess.addField('Tham gia', `<@${msg.author.id}> @here`);
-		mess.addField('Hướng dẫn', 'Bạn hãy giải thích vấn đề gặp phải và chờ quản trị viên giải quyết nhé.\nSau khi kết thúc, gõ /done để xóa kênh.');
-		await channel.send({embeds: [mess]});
-		await channel.send(`<@${msg.author.id}>`);
-		if (msg.member.roles.cache.find(r => r.name === 'admin') || msg.member.roles.cache.find(r => r.name === 'moderator') || msg.member.roles.cache.find(r => r.name === 'verified-player')) {
-			await channel.send(`/iot <@${msg.author.id}>`);
-		}
-		await msg.reply(`Vui lòng gửi tin nhắn vào kênh <#${channel.id}> để giải quyết vấn đề.`);
-		break;
-	case '/done':
-		msg.react('👌');
-		if (msg.channel.name.startsWith('case_')) {
-			await discordRemoveChannel(msg.channel.name, 'GUILD_TEXT');
-		}
-		break;
-	}
 	// --- Check Regex ---
 	var regexp_emoji = /^:[^\s:\\\/]+?:$/;
 	if (regexp_emoji.test(content))
 		discordSendEmoji(msg);
 }
-
-async function discordProcessInteraction(interaction) {
-	switch (interaction.data.name.toLowerCase()) {
-	case 'iot':
-		var id = interaction.member.user.id;
-		if (interaction.data.options)
-			id = interaction.data.options[0].value;
-		var uid = await getIOTUidFromDiscordId(id);
-		var buffer = await generateIOTProfile(uid);
-		console.log(interaction.id, interaction.token);
-		discordClient.api.interactions(interaction.id, interaction.token).callback.post({
-			data: {
-				type: 4,
-				data: {
-					content: 'hello world!',
-					flag: 64,
-					// embeds: [{
-					// 	image: buffer
-					// }]
-				}
-			}
-		});
-	}
-}
-
 
 // --- Emoji --- 
 var data_emoji = null;
@@ -691,7 +606,6 @@ discordClient.on('ready', () => {
 });
 
 discordClient.on('messageCreate', async function (msg) {
-	console.log(msg);
 	discordProcessMessage(msg);
 	switch (msg.channel.name.toLowerCase().trim()) {
 	case 'iot-tools':
@@ -722,27 +636,84 @@ discordClient.on('interactionCreate', async interaction => {
 	if (commandName === 'ping') {
 		await interaction.reply('Pong!');
 	} else if (commandName === 'server') {
-		await interaction.reply('Server info.');
+		await interaction.reply(`Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}`);
 	} else if (commandName === 'user') {
-		await interaction.reply('User info.');
+		await interaction.reply(`Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`);
+	} else if (commandName === 'iot') {
+		console.log(interaction);
+		await interaction.deferReply();
+		var user = interaction.options.getMember('user');
+		var id = null;
+		if (!user)
+			id = interaction.user.id;
+		else
+			id = user.id;
+		var uid = await getIOTUidFromDiscordId(id);
+		if (!uid)
+			return interaction.editReply('User not found!');
+		var buffer = await generateIOTProfile(uid);
+		await interaction.editReply({
+			files: [buffer]
+		});
+	} else if (commandName === 'support') {
+		await interaction.deferReply();
+		var caseId = Math.floor(Math.random() * 1000000);
+		await discordCreateChannel(`case_${caseId}`, 'GUILD_TEXT', 'help channels');
+		var channel = interaction.guild.channels.cache.find(r => r.name === `case_${caseId}`);
+		await channel.permissionOverwrites.edit(interaction.user, {
+			'VIEW_CHANNEL': true,
+			'SEND_MESSAGES': true
+		});
+		// send inital message for support to channel
+		var mess = new MessageEmbed()
+			.setColor('#0099ff')
+			.setTitle(`Support Request - Case ${caseId}`)
+			.setDescription(`${interaction.user} gửi yêu cầu hỗ trợ, vui lòng đợi quản trị viên trả lời.`)
+			.setTimestamp();
+		mess.addField('Tham gia', `<@${interaction.user.id}> @here`);
+		mess.addField('Hướng dẫn', 'Bạn hãy giải thích vấn đề gặp phải và chờ quản trị viên giải quyết nhé.\nSau khi kết thúc, gõ /done để xóa kênh.');
+		await channel.send({embeds: [mess]});
+		await channel.send(`<@${interaction.user.id}>`);
+		const userId = interaction.user.id;
+		const user = interaction.guild.members.cache.find(r => r.id === userId);
+		if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
+			uid = await getIOTUidFromDiscordId(userId);
+			if (!uid)
+				return channel.send('User not found!');
+			else {
+				buffer = await generateIOTProfile(uid);
+				await channel.send({
+					files: [buffer]
+				});
+			}
+		}
+		await interaction.editReply(`Vui lòng gửi tin nhắn vào kênh <#${channel.id}> để giải quyết vấn đề.`);
+	} else if (commandName === 'done') {
+		if (interaction.channel.name.startsWith('case_')) {
+			await interaction.reply('Vui lòng đợi!');
+			await discordRemoveChannel(interaction.channel.name, 'GUILD_TEXT');
+		} else {
+			interaction.reply('Kênh không hợp lệ!');
+		}
+	} else if (commandName === 'update-role') {
+		await interaction.deferReply();
+		var member = interaction.guild.members.cache.find(r => r.id === interaction.user.id);
+		uid = await getIOTUidFromDiscordId(member.id);
+		if (!uid)
+			interaction.editReply('Tài khoản chưa liên kết với IOT!');
+		else {
+			linkIOTAccount(member, false);
+			interaction.editReply('Cập nhật thành công!');
+		}
 	}
 });
 
-discordClient.ws.on('INTERACTION_CREATE', async interaction => {
-	// console.log(interaction);
-	// discordClient.api.interactions(interaction.id, interaction.token).callback.post({data: {
-	// 	type: 5,
-	// 	data: {
-
-	// 	}
-	// }});
-	discordProcessInteraction(interaction);
-});
-
 discordClient.on('messageReactionAdd', async (reaction, user) => {
+	console.log(reaction);
 	if (user.id == discordClient.user.id)
 		return;
 	// When we receive a reaction we check if the reaction is partial or not
+	console.log(reaction);
 	if (reaction.partial) {
 		try {
 			await reaction.fetch();
@@ -751,6 +722,7 @@ discordClient.on('messageReactionAdd', async (reaction, user) => {
 			return;
 		}
 	}
+	console.log(reaction);
 	if (reaction.message.embeds.length > 0) {
 		var embed = reaction.message.embeds[0];
 		console.log(embed.title);
@@ -872,5 +844,9 @@ app.post('/fb_webhook', (req, res) => {
 });
 
 setInterval(async function () {
-	await fetch(process.env.HOMEPAGE || 'https://www.chinhphucvn.com');
+	try {
+		await fetch(process.env.HOMEPAGE || 'https://www.chinhphucvn.com');
+	} catch (error) {
+		console.error(error);
+	}
 }, 60000);
