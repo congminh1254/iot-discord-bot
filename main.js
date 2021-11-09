@@ -461,7 +461,7 @@ async function discordProcessBotLogs(msg) {
 async function discordProcessMessage(msg) {
 	var content = msg.content;
 	if (Math.round(Math.random()*100) == 99) {
-		msg.react('807344101283332097');
+		// msg.react('');
 	}
 	switch (content.split(' ')[0].trim().toLowerCase()) {
 	case '/iot':
@@ -705,15 +705,26 @@ discordClient.on('messageCreate', async function (msg) {
 		break;
 	}
 
-	if (msg.content === 'ping') {
-		msg.reply('pong');
-	}
 	if (!msg.author.bot && (msg.content.toLowerCase().indexOf('baymax') > -1 || msg.content.indexOf(`<@!${discordClient.user.id}>`) > -1)) {
 		var msg_text = bot_config.GREETING_MSG[Math.floor(Math.random() * bot_config.GREETING_MSG.length)];
 		var lang = bot_config.GREETING_LANGUAGES[Math.floor(Math.random() * bot_config.GREETING_LANGUAGES.length)];
 		// Translates some text into Russian
 		const [translation] = await translate.translate(msg_text, lang);
 		msg.reply(translation);
+	}
+});
+
+discordClient.on('interactionCreate', async interaction => {
+	if (!interaction.isCommand()) return;
+
+	const { commandName } = interaction;
+
+	if (commandName === 'ping') {
+		await interaction.reply('Pong!');
+	} else if (commandName === 'server') {
+		await interaction.reply('Server info.');
+	} else if (commandName === 'user') {
+		await interaction.reply('User info.');
 	}
 });
 
