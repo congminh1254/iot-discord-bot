@@ -639,7 +639,7 @@ discordClient.on('interactionCreate', async interaction => {
 		} else if (commandName === 'user') {
 			await interaction.reply(`Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`);
 		} else if (commandName === 'iot') {
-			console.log(interaction);
+			// console.log(interaction);
 			await interaction.deferReply();
 			var user = interaction.options.getMember('user');
 			var id = null;
