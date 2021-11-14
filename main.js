@@ -745,6 +745,7 @@ discordClient.on('interactionCreate', async interaction => {
 			break;
 		case 'reportblock':
 			await interaction.deferReply();
+			var user = interaction.guild.members.cache.find(r => r.id === userId);
 			if (!user.roles.cache.find(r => r.name === 'admin'))
 				return interaction.editReply('Bạn không có quyền thực hiện chức năng này!');
 			var uid = params[1];
