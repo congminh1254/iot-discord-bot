@@ -737,11 +737,16 @@ discordClient.on('interactionCreate', async interaction => {
 			break;
 		case 'reportignore':
 			await interaction.deferReply();
+			var user = interaction.guild.members.cache.find(r => r.id === userId);
+			if (!user.roles.cache.find(r => r.name === 'admin'))
+				return interaction.editReply('Bạn không có quyền thực hiện chức năng này!');
 			await interaction.editReply('Báo cáo được bỏ qua.');
 			await interaction.message.delete();
 			break;
 		case 'reportblock':
 			await interaction.deferReply();
+			if (!user.roles.cache.find(r => r.name === 'admin'))
+				return interaction.editReply('Bạn không có quyền thực hiện chức năng này!');
 			var uid = params[1];
 			var minutes = params[2];
 			var reason = interaction.message.embeds[0].fields[2].value;
