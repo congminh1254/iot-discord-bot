@@ -138,7 +138,7 @@ async function discordLockAccount(interaction, uid) {
 			max: 1,
 			time: 60000,
 			errors: ['time']
-		}).catch(collected => {
+		}).catch(() => {
 			throw new Error('```You do not have any react.```');
 		});
 		confirm_msg.delete();
@@ -151,7 +151,7 @@ async function discordLockAccount(interaction, uid) {
 				max: 1,
 				time: 60000,
 				errors: ['time']
-			}).catch(collected => {
+			}).catch(() => {
 				throw new Error('```You do not have any message.```');
 			});
 			days_msg.delete();
@@ -311,7 +311,7 @@ async function discordProcessIOTTools(msg) {
 			else
 				row.addComponents(new MessageButton().setCustomId(`unlock_${uid}`).setStyle('PRIMARY').setLabel('Mở khóa'));
 			row.addComponents(new MessageButton().setCustomId(`delete_${uid}`).setStyle('DANGER').setLabel('Xóa'));
-			var send_msg = await msg.channel.send({
+			await msg.channel.send({
 				embeds: [mess],
 				components: [row]
 			});
@@ -734,6 +734,20 @@ discordClient.on('interactionCreate', async interaction => {
 		case 'delete':
 			await interaction.deferReply();
 			await discordDeleteUser(interaction, params[1]);
+			break;
+		case 'reportignore':
+			await interaction.deferReply();
+			await interaction.editReply('Báo cáo được bỏ qua.');
+			await interaction.message.delete();
+			break;
+		case 'reportblock':
+			await interaction.deferReply();
+			var uid = params[1];
+			var minutes = params[2];
+			var reason = interaction.message.embeds[0].fields[2].value;
+			var result = await utils.accountLockAccount(uid, minutes, reason);
+			await interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+			await interaction.message.delete();
 			break;
 		}
 	}
