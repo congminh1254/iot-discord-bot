@@ -753,7 +753,7 @@ discordClient.on('interactionCreate', async interaction => {
 			var uid = params[1];
 			var minutes = params[2];
 			var reason = interaction.message.embeds[0].fields[2].value;
-			var result = await utils.accountLockAccount(uid, minutes, reason);
+			var result = await functions.accountLockAccount(uid, minutes, reason);
 			await interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
 			await interaction.message.delete();
 			break;
