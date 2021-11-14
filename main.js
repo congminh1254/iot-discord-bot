@@ -244,6 +244,16 @@ async function discordProcessIOTTools(msg) {
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('name').startAt(name).endAt(name).once('value')).val();
+		if (!data) {
+			var authUser = await auth.getUserByEmail(username);
+			if (authUser)
+			{
+				var uid = authUser.uid;
+				var profile = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+				data = {};
+				data[uid] = profile;
+			}
+		}
 		data = data || {};
 		if (Object.values(data).length == 0) {
 			msg.channel.send('Player not found :weary:');
@@ -333,6 +343,16 @@ async function discordProcessIOTUpdates(msg) {
 			data = (await database.ref('/private_users/').orderByChild('email').startAt(username).endAt(username).once('value')).val();
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('name').startAt(name).endAt(name).once('value')).val();
+		if (!data) {
+			var authUser = await auth.getUserByEmail(username);
+			if (authUser)
+			{
+				var uid = authUser.uid;
+				var profile = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+				data = {};
+				data[uid] = profile;
+			}
+		}
 		data = data || {};
 		if (Object.values(data).length == 0) {
 			msg.channel.send('Player not found :weary:');
@@ -414,7 +434,8 @@ async function discordProcessIOTUpdates(msg) {
 			});
 		}
 		break;
-	case '/something':
+	case '/review-all':
+		sendAllWaitingAccount();
 		break;
 	}
 }
@@ -765,29 +786,46 @@ discordClient.on('guildMemberAdd', async function (member) {
 	linkIOTAccount(member, true);
 });
 
-var scheduleReview = schedule.scheduleJob('0 */6 * * *', function () {
-	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-updates');
-	channel.messages.fetch().then(messages => {
-		messages.array().forEach(msg => {
-			msg.delete();
-		});
+var scheduleReview = schedule.scheduleJob('0 */6 * * *',async function () {
+	clearMessageInChannel('iot-updates').then(function() {
+		sendAllWaitingAccount();
 	});
-
-	setTimeout(async function () {
-		channel.send('```Check Again!!!```');
-		var accounts = (await functions.accountGetAccountReview()).data;
-		if (accounts.length > 0) {
-			channel.send(`\`\`\`There are ${accounts.length} remaining accounts to be reviewed!\`\`\``);
-			for (var user of accounts) {
-				await channel.send(`/review ${user.email}`);
-				await new Promise((resolve) => {
-					setTimeout(resolve(), 30000);
-				});
-			}
-		}
-	}, 15000);
 });
 
+async function clearMessageInChannel(channelName) {
+	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == channelName);
+	var messages = await channel.messages.fetch();
+	if (messages) {
+		var promises = [];
+		messages.forEach(async (msg) => {
+			promises.push(msg.delete());
+		});
+		await Promise.all(promises);
+		await clearMessageInChannel(channelName);
+	}
+	return;
+}
+
+async function sendAllWaitingAccount() {
+	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-updates');
+	channel.send('```Check Again!!!```');
+	var accounts = (await functions.accountGetAccountReview()).data;
+	if (accounts.length > 0) {
+		await channel.send(`\`\`\`There are ${accounts.length} remaining accounts to be reviewed!\`\`\``);
+		for (var user of accounts) {
+			await channel.send(`/review ${user.email}`);
+		}
+	}
+	return;
+}
+
+async function updateAll() {
+	await clearMessageInChannel('iot-updates');
+	await sendAllWaitingAccount();
+}
+
+
+setTimeout(updateAll, 15000);
 
 discordClient.login(process.env.DISCORD_BOT_KEY);
 
