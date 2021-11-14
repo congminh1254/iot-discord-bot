@@ -795,7 +795,7 @@ var scheduleReview = schedule.scheduleJob('0 */6 * * *',async function () {
 async function clearMessageInChannel(channelName) {
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == channelName);
 	var messages = await channel.messages.fetch();
-	if (messages) {
+	if (messages && messages.size > 0) {
 		var promises = [];
 		messages.forEach(async (msg) => {
 			promises.push(msg.delete());
@@ -819,13 +819,8 @@ async function sendAllWaitingAccount() {
 	return;
 }
 
-async function updateAll() {
-	await clearMessageInChannel('iot-updates');
-	await sendAllWaitingAccount();
-}
+setTimeout(() => clearMessageInChannel('iot-updates'), 5000);
 
-
-setTimeout(updateAll, 15000);
 
 discordClient.login(process.env.DISCORD_BOT_KEY);
 
