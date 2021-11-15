@@ -412,9 +412,10 @@ async function discordProcessIOTUpdates(msg) {
 				mess.addField('IP', `${ip} - ${joIPData.country} - ${joIPData.as}`);
 			}
 			if (msg.author.bot) {
-				var members = msg.guild.roles.cache.find(r => r.name === 'admin').members;
-				var keys = Array.from(members.keys());
-				await msg.channel.send(`<@${keys[Math.floor(Math.random() * keys.length)]}>`);
+				// var members = msg.guild.roles.cache.find(r => r.name === 'admin').members;
+				// var keys = Array.from(members.keys());
+				// await msg.channel.send(`<@${keys[Math.floor(Math.random() * keys.length)]}>`);
+				await msg.channel.send('@here');
 			} else
 				await msg.channel.send(`<@${msg.author.id}>`);
 			const row = new MessageActionRow().addComponents(
