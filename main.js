@@ -880,8 +880,38 @@ app.get('/', (req, res) => {
 	res.send();
 });
 
-app.post('/discord_webhook', (req, res) => {
+function upcaseFirst(str) {
+	return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+app.post('/discord_webhook',async (req, res) => {
 	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
+	var data = req.body;
+	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'updates');
+	var msg = new MessageEmbed()
+		.setTitle(upcaseFirst(data.action) + (data.resource ? ' - ' : '') + (upcaseFirst(data.resource) || ''))
+		.setTimestamp(data.updated_at);
+	if (data.actor)
+		msg.setAuthor(data.actor.email);
+	if (data) {
+		var temp = data.data;
+		if (temp.app)
+			msg.addField('App', temp.app.name);
+		if (temp.status)
+			msg.addField('Status', temp.status);
+		if (temp.message)
+			msg.addField('Message', temp.message);
+		if (temp.source_blob)
+			msg.addField('Code Version', temp.source_blob.version);
+		if (temp.release)
+			msg.addField('Version', temp.release.version.toString());
+		if (temp.state)
+			msg.addField('State', temp.state);
+	}
+	await channel.send({
+		embeds: [msg]
+	});
+
 	res.setHeader('Content-Type', 'application/json');
 	res.end(JSON.stringify({
 		'status': 1,
@@ -891,6 +921,7 @@ app.post('/discord_webhook', (req, res) => {
 
 app.post('/fb_webhook', (req, res) => {
 	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
+	
 	res.send('Hi there, I\'m running!');
 });
 
