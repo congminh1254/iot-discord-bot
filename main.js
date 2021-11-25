@@ -365,24 +365,24 @@ async function discordProcessIOTUpdates(msg) {
 				.setTitle('Player Review')
 				.addFields({
 					name: 'Full name',
-					value: user.name || null
+					value: user.name || ' - '
 				}, {
 					name: 'Username',
-					value: user.username || null,
+					value: user.username || ' - ',
 					inline: true
 				}, {
 					name: 'Email',
-					value: user.email || null,
+					value: user.email || ' - ',
 					inline: true
 				}, {
 					name: 'Birthday',
-					value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || null
+					value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || ' - '
 				}, {
 					name: 'School',
-					value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : null
+					value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : ' - '
 				}, {
 					name: 'Creation time',
-					value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null
+					value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || ' - '
 				}, )
 				.setThumbnail(authUser.photoURL)
 				.setFooter(uid);
