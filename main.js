@@ -801,7 +801,12 @@ async function clearMessageInChannel(channelName) {
 		messages.forEach(async (msg) => {
 			promises.push(msg.delete());
 		});
-		await Promise.all(promises);
+		try {
+			await Promise.all(promises);
+		}
+		catch (err) {
+			console.log(err);
+		}
 		await clearMessageInChannel(channelName);
 	}
 	return;
