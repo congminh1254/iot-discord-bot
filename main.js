@@ -869,7 +869,6 @@ setInterval(function () {
 		var rooms = Array.from(Object.keys(data), function (key) {
 			return `Room ${key}`;
 		});
-		console.log(rooms);
 		discordClearChannel(rooms, 'GUILD_VOICE', 'Revise Channels');
 	});
 }, 300000);
@@ -881,7 +880,6 @@ app.use(express.json());
 app.listen(process.env.PORT || 8080);
 
 app.get('/', (req, res) => {
-	console.log(req);
 	res.send();
 });
 
@@ -890,7 +888,6 @@ function upcaseFirst(str) {
 }
 
 app.post('/discord_webhook',async (req, res) => {
-	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
 	var data = req.body;
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'updates');
 	var msg = new MessageEmbed()
@@ -924,9 +921,7 @@ app.post('/discord_webhook',async (req, res) => {
 	}));
 });
 
-app.post('/fb_webhook', (req, res) => {
-	console.log(`${req.method} ${req.url}\n${JSON.stringify(req.body)}`);
-	
+app.post('/fb_webhook', (req, res) => {	
 	res.send('Hi there, I\'m running!');
 });
 

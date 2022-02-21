@@ -28,7 +28,6 @@ exports.getIdToken = async function (uid = process.env.DEFAULT_ADMIN_UID) {
 	});
 	result = await result.json();
 	idToken[uid] = result.idToken;
-	console.log(result);
 	return result.idToken;
 };
 
