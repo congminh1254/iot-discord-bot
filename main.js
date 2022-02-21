@@ -245,13 +245,17 @@ async function discordProcessIOTTools(msg) {
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('name').startAt(name).endAt(name).once('value')).val();
 		if (!data) {
-			var authUser = await auth.getUserByEmail(username);
-			if (authUser)
-			{
-				var uid = authUser.uid;
-				var profile = (await database.ref(`/private_users/${uid}/`).once('value')).val();
-				data = {};
-				data[uid] = profile;
+			try {
+				var authUser = await auth.getUserByEmail(username);
+				if (authUser)
+				{
+					var uid = authUser.uid;
+					var profile = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+					data = {};
+					data[uid] = profile;
+				}
+			} catch (err) {
+				console.log(err);
 			}
 		}
 		data = data || {};
@@ -344,13 +348,18 @@ async function discordProcessIOTUpdates(msg) {
 		if (!data)
 			data = (await database.ref('/private_users/').orderByChild('name').startAt(name).endAt(name).once('value')).val();
 		if (!data) {
-			var authUser = await auth.getUserByEmail(username);
-			if (authUser)
-			{
-				var uid = authUser.uid;
-				var profile = (await database.ref(`/private_users/${uid}/`).once('value')).val();
-				data = {};
-				data[uid] = profile;
+			try {
+				var authUser = await auth.getUserByEmail(username);
+				if (authUser)
+				{
+					var uid = authUser.uid;
+					var profile = (await database.ref(`/private_users/${uid}/`).once('value')).val();
+					data = {};
+					data[uid] = profile;
+				}
+			}
+			catch (ex) {
+				console.log(ex);
 			}
 		}
 		data = data || {};
