@@ -1,5 +1,6 @@
 const { MessageEmbed, Client, Intents, MessageActionRow, MessageButton } = require('discord.js');
 const express = require('express');
+var cors = require('cors');
 const admin = require('firebase-admin');
 var config = JSON.parse(process.env.FIREBASE_CONFIG);
 var cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -884,7 +885,14 @@ setInterval(function () {
 
 // ------------------------------- //
 
+var corsOptions = {
+	origin: '*',
+	optionsSuccessStatus: 200 // For legacy browser support
+};
+
+
 var app = express();
+app.use(cors(corsOptions));
 app.use(express.json());
 app.listen(process.env.PORT || 8080);
 
