@@ -944,6 +944,16 @@ app.post('/iot_chat', (req, res) => {
 	res.send('Ok');	
 });
 
+app.post('/send_dm', (req, res) => {
+	var data = req.body;
+	if (data.uid && data.message) {
+		discordClient.users.fetch(data.uid).then(function (user) {
+			user.send(data.message);
+		});
+	}
+	res.send('Ok');
+});
+
 setInterval(async function () {
 	try {
 		await fetch(process.env.HOMEPAGE || 'https://www.chinhphucvn.com');
