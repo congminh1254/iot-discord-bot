@@ -937,9 +937,8 @@ app.post('/fb_webhook', (req, res) => {
 app.post('/iot_chat', (req, res) => {
 	var data = req.body;
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-chat');
-	var msg = `${data.name} (${data.username}) - room ${data.roomId}: ${data.message}`;
+	var msg = `${data.name} (${data.username}) - room ${data.roomId}: ${data.text}`;
 	channel.send(msg);
-	console.log(data);
 	res.send('Ok');	
 });
 
