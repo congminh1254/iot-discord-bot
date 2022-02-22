@@ -934,6 +934,15 @@ app.post('/fb_webhook', (req, res) => {
 	res.send('Hi there, I\'m running!');
 });
 
+app.post('/iot_chat', (req, res) => {
+	var data = req.body;
+	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-chat');
+	var msg = `${data.name} (${data.username}) - room ${data.roomId}: ${data.message}`;
+	channel.send(msg);
+	console.log(data);
+	res.send('Ok');	
+});
+
 setInterval(async function () {
 	try {
 		await fetch(process.env.HOMEPAGE || 'https://www.chinhphucvn.com');
