@@ -271,33 +271,33 @@ async function discordProcessIOTTools(msg) {
 				.setTitle('Player Profile')
 				.addFields({
 					name: 'Full name',
-					value: user.name || null
+					value: user.name || 'null'
 				}, {
 					name: 'Username',
-					value: user.username || null
+					value: user.username || 'null'
 				}, {
 					name: 'Email',
-					value: user.email || null
+					value: user.email || 'null'
 				}, {
 					name: 'Roles',
-					value: utils.Permission[user.permission] || null,
+					value: utils.Permission[user.permission] || 'null',
 					inline: true
 				}, {
 					name: 'Ranking',
-					value: utils.getRankGradeName(user.talent) || null,
+					value: utils.getRankGradeName(user.talent) || 'null',
 					inline: true
 				}, {
 					name: 'Birthday',
-					value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || null
+					value: moment(user.birthday, 'X').utcOffset('+0700').format('DD/MM/YYYY') || 'null'
 				}, {
 					name: 'School',
-					value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : null
+					value: (user.school) ? `${user.school.schoolName} - ${user.school.provinceName}` : 'null'
 				}, {
 					name: 'Creation time',
-					value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null
+					value: moment(user.created_at, 'X').utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || 'null'
 				}, {
 					name: 'Last sign-in time',
-					value: moment(authUser.metadata.lastSignInTime).utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || null
+					value: moment(authUser.metadata.lastSignInTime).utcOffset('+0700').format('DD/MM/YYYY HH:mm:ss') || 'null'
 				}, )
 				.setThumbnail(authUser.photoURL);
 			if (user.ip) {
@@ -935,6 +935,8 @@ app.post('/fb_webhook', (req, res) => {
 });
 
 app.post('/iot_chat', (req, res) => {
+	var headers = req.headers;
+
 	var data = req.body;
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'iot-chat');
 	var msg = `${data.name} (${data.username}) - room ${data.roomId}: ${data.text}`;
