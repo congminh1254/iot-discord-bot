@@ -561,6 +561,15 @@ async function linkIOTAccount(member, welcome_message = true) {
 				await member.roles.add(member.guild.roles.cache.find(r => r.name === 'rank-ace'));
 				break;
 			}
+		if (user.plan && user.plan > 0)
+			switch (user.plan) {
+			case 1:
+				await member.roles.add(member.guild.roles.cache.find(r => r.name === 'elite'));
+				break;
+			case 2:
+				await member.roles.add(member.guild.roles.cache.find(r => r.name === 'elite+'));
+				break;
+			}
 		if (welcome_message)
 			channel.send(`Chào mừng người chơi IOT ${user.username} (${utils.getRankGradeName(user.talent)}) tham gia server ${member} :heart_eyes_cat:`);
 	}
