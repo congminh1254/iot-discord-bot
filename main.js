@@ -516,7 +516,9 @@ async function discordSendEmoji(msg) {
 }
 
 async function linkIOTAccount(member, welcome_message = true) {
-	await member.roles.remove(member.roles.cache);
+	await member.roles.remove(member.roles.cache).catch((err) => {
+		console.log(err);
+	});
 	var channel = discordClient.channels.cache.find(c => c.name.toLowerCase().trim() == 'general');
 	var uid = member.id;
 	var users = (await database.ref('/private_users/').orderByChild('/discord/id').startAt(uid).endAt(uid).once('value')).val() || {};
@@ -561,6 +563,7 @@ async function linkIOTAccount(member, welcome_message = true) {
 				await member.roles.add(member.guild.roles.cache.find(r => r.name === 'rank-ace'));
 				break;
 			}
+
 		if (user.plan && user.plan > 0)
 			switch (user.plan) {
 			case 1:
