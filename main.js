@@ -2,9 +2,13 @@ const { MessageEmbed, Client, Intents, MessageActionRow, MessageButton } = requi
 const express = require('express');
 var cors = require('cors');
 const admin = require('firebase-admin');
+const fs = require('fs');
+const pdf = require('html-pdf');
+const ejs = require('ejs');
 var config = JSON.parse(process.env.FIREBASE_CONFIG);
 var cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-config.credential = admin.credential.cert(cert);
+fs.writeFileSync('cert.json', JSON.stringify(cert));
+config.credential = admin.credential.cert('cert.json');
 var firebase = admin.initializeApp(config);
 const bot_config = require('./config');
 const moment = require('moment');
@@ -15,10 +19,8 @@ const {
 	Translate
 } = require('@google-cloud/translate').v2;
 const translate = new Translate();
-const fs = require('fs');
-const pdf = require('html-pdf');
-const ejs = require('ejs');
-fs.writeFileSync('cert.json', JSON.stringify(cert));
+
+
 const fetch = require('node-fetch');
 
 // ---------Testing-------------- //
