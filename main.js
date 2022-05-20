@@ -633,7 +633,8 @@ function generateIOTProfile(uid) {
 		html = ejs.render(html, params);
 		var options = {
 			'zoomFactor': '2',
-			'type': 'png'
+			'type': 'png',
+			localUrlAccess: true
 		};
 
 		pdf.create(html, options).toBuffer(function (err, buffer) {
