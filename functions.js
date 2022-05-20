@@ -1,5 +1,5 @@
 const firebase = require('firebase-admin');
-var config = JSON.parse(process.env.FIREBASE_CONFIG);
+var config = JSON.parse((new Buffer(process.env.FIREBASE_CONFIG, 'base64')).toString('ascii'));
 const database = firebase.database();
 const auth = firebase.auth();
 const storage = firebase.storage();
