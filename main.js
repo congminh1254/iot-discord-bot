@@ -638,6 +638,8 @@ function generateIOTProfile(uid) {
 		};
 
 		pdf.create(html, options).toBuffer(function (err, buffer) {
+			if (err)
+				console.error(err);
 			resolve(buffer);
 		});
 	});
