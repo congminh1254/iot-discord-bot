@@ -845,8 +845,8 @@ discordClient.on('interactionCreate', async interaction => {
 						embed.fields.splice(i, 1);
 					}
 				}
+				embed.addField('Trạng thái', 'Báo cáo được bỏ qua.');
 				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
-				await interaction.message.reply('Báo cáo được bỏ qua.');
 			}
 			break;
 		case 'reportblock':
@@ -916,8 +916,8 @@ discordClient.on('interactionCreate', async interaction => {
 				var minutes = params[2];
 				var reason = interaction.message.embeds[0].fields[2].value;
 				var result = await functions.accountLockAccount(uid, minutes, reason);
+				embed.addField('Trạng thái', `${result.message.message}`);
 				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
-				await interaction.message.reply(`\`\`\`${result.message.message}\`\`\``);
 			}
 			break;
 		}
