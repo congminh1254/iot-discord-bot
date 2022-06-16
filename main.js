@@ -787,24 +787,138 @@ discordClient.on('interactionCreate', async interaction => {
 		case 'reportignore':
 			await interaction.deferReply();
 			var userId = interaction.user.id;
-			var user = interaction.guild.members.cache.find(r => r.id === userId);
-			if (!user.roles.cache.find(r => r.name === 'admin'))
-				return interaction.editReply('Bạn không có quyền thực hiện chức năng này!');
-			await interaction.editReply('Báo cáo được bỏ qua.');
-			await interaction.message.delete();
+			user = interaction.guild.members.cache.find(r => r.id === userId);
+			var embed = interaction.message.embeds[0];
+			var options = Array.from(embed.fields.map(r => r.name));
+			var row = interaction.message.components[0];
+			var voted = [];
+			if (params[2])
+				voted = params[2].split(',');
+			var voted_users = [];
+			for (i = 0; i < embed.fields.length; i++) {
+				if (embed.fields[i].name === 'Biểu quyết') {
+					voted_users = embed.fields[i].value.trim().split(' ');
+				}
+			}
+			if (voted_users.includes(`<@${userId}>`)) {
+				return await interaction.deleteReply();
+			}
+			voted_users = voted_users.filter(r => r.trim() !== '');
+			if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
+				for (var i = 0; i < row.components.length; i++) {
+					if (row.components[i].customId.startsWith('reportignore_')) {
+						if (params.length <= 2)
+							row.components[i].customId +=  `_${voted.length}`;
+						else
+							row.components[i].customId +=  `,${voted.length}`;
+						row.components[i].label = row.components[i].label.split('(')[0].trim();
+						row.components[i].label += ` (${voted.length + 1} phiếu)`;
+						voted = row.components[i].customId.split('_')[2].split(',');
+					}
+				}
+				if (!options.includes('Biểu quyết'))
+					embed.fields.push({
+						name: 'Biểu quyết', value: ''
+					});
+				for (i = 0; i < embed.fields.length; i++) {
+					if (embed.fields[i].name === 'Biểu quyết') {
+						embed.fields[i].value +=  ` <@${userId}>`;
+						voted_users.push(`<@${userId}>`);
+					}
+				}
+				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
+				interaction.deleteReply();
+			} else {
+				return interaction.editReply('Bạn không có quyền thực hiện thao tác này!');
+			}
+			if (voted.length >= 5 || user.roles.cache.find(r => r.name === 'admin')) {
+				var voted_msg = '';
+				for (i = 0; i < voted.length; i++) {
+					voted_msg += `${voted_users[voted[i]]} `;
+				}
+				embed.addField('Quyết định', voted_msg);
+				for (i = 0; i < row.components.length; i++) {
+					row.components[i].disabled = true;
+				}
+				for (i = 0; i<embed.fields.length; i++) {
+					if (embed.fields[i].name === 'Biểu quyết') {
+						embed.fields.splice(i, 1);
+					}
+				}
+				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
+				await interaction.message.reply('Báo cáo được bỏ qua.');
+			}
 			break;
 		case 'reportblock':
 			await interaction.deferReply();
-			var userId = interaction.user.id;
-			var user = interaction.guild.members.cache.find(r => r.id === userId);
-			if (!user.roles.cache.find(r => r.name === 'admin'))
-				return interaction.editReply('Bạn không có quyền thực hiện chức năng này!');
-			var uid = params[1];
-			var minutes = params[2];
-			var reason = interaction.message.embeds[0].fields[2].value;
-			var result = await functions.accountLockAccount(uid, minutes, reason);
-			await interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
-			await interaction.message.delete();
+			userId = interaction.user.id;
+			user = interaction.guild.members.cache.find(r => r.id === userId);
+
+			embed = interaction.message.embeds[0];
+			options = Array.from(embed.fields.map(r => r.name));
+			row = interaction.message.components[0];
+			voted = [];
+			if (params[3])
+				voted = params[3].split(',');
+			voted_users = [];
+			for (i = 0; i < embed.fields.length; i++) {
+				if (embed.fields[i].name === 'Biểu quyết') {
+					voted_users = embed.fields[i].value.trim().split(' ');
+				}
+			}
+			if (voted_users.includes(`<@${userId}>`)) {
+				return await interaction.deleteReply();
+			}
+			voted_users = voted_users.filter(r => r.trim() !== '');
+			if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
+				for (i = 0; i < row.components.length; i++) {
+					if (row.components[i].customId.startsWith('reportblock_')) {
+						if (params.length <= 3)
+							row.components[i].customId +=  `_${voted.length}`;
+						else
+							row.components[i].customId +=  `,${voted.length}`;
+						row.components[i].label = row.components[i].label.split('(')[0].trim();
+						row.components[i].label += ` (${voted.length + 1} phiếu)`;
+						voted = row.components[i].customId.split('_')[3].split(',');
+					}
+				}
+				if (!options.includes('Biểu quyết'))
+					embed.fields.push({
+						name: 'Biểu quyết', value: ''
+					});
+				for (i = 0; i < embed.fields.length; i++) {
+					if (embed.fields[i].name === 'Biểu quyết') {
+						embed.fields[i].value +=  ` <@${userId}>`;
+						voted_users.push(`<@${userId}>`);
+					}
+				}
+				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
+				interaction.deleteReply();
+			} else {
+				return interaction.editReply('Bạn không có quyền thực hiện thao tác này!');
+			}
+			if (voted.length >= 5 || user.roles.cache.find(r => r.name === 'admin')) {
+				voted_msg = '';
+				for (i = 0; i < voted.length; i++) {
+					voted_msg += `${voted_users[voted[i]]} `;
+				}
+				embed.addField('Quyết định', voted_msg);
+				for (i = 0; i < row.components.length; i++) {
+					row.components[i].disabled = true;
+				}
+				for (i = 0; i<embed.fields.length; i++) {
+					if (embed.fields[i].name === 'Biểu quyết') {
+						embed.fields.splice(i, 1);
+					}
+				}
+
+				uid = params[1];
+				var minutes = params[2];
+				var reason = interaction.message.embeds[0].fields[2].value;
+				var result = await functions.accountLockAccount(uid, minutes, reason);
+				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
+				await interaction.message.reply(`\`\`\`${result.message.message}\`\`\``);
+			}
 			break;
 		}
 	}
