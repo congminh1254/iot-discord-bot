@@ -892,7 +892,7 @@ discordClient.on('interactionCreate', async interaction => {
 						voted_users.push(`<@${userId}>`);
 					}
 				}
-				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
+				await interaction.message.edit({embeds: [embed], components: [row]});
 				interaction.deleteReply();
 			} else {
 				return interaction.editReply('Bạn không có quyền thực hiện thao tác này!');
@@ -917,7 +917,7 @@ discordClient.on('interactionCreate', async interaction => {
 				var reason = interaction.message.embeds[0].fields[2].value;
 				var result = await functions.accountLockAccount(uid, minutes, reason);
 				embed.addField('Trạng thái', `${result.message.message}`);
-				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
+				await interaction.message.edit({embeds: [embed], components: [row]});
 			}
 			break;
 		}
