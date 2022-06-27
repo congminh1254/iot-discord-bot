@@ -975,7 +975,6 @@ discordClient.login(process.env.DISCORD_BOT_KEY);
 
 const database = firebase.database();
 const auth = firebase.auth();
-const storage = firebase.storage();
 
 functions.getIdToken();
 async function sendChatMessage(path, message) {

@@ -1,12 +1,11 @@
 const firebase = require('firebase-admin');
 var config = JSON.parse((new Buffer(process.env.FIREBASE_CONFIG, 'base64')).toString('ascii'));
-const database = firebase.database();
 const auth = firebase.auth();
-const storage = firebase.storage();
 const fetch = require('node-fetch');
+const { io } = require('socket.io-client');
 
 var idToken = {};
-var functions_base_url = 'https://us-central1-iot-project-1509.cloudfunctions.net';
+var socket = null;
 
 setInterval(function () {
 	idToken = {};
@@ -31,100 +30,118 @@ exports.getIdToken = async function (uid = process.env.DEFAULT_ADMIN_UID) {
 	return result.idToken;
 };
 
-exports.accountDeleteAccount = async function (uid) {
-	var result = await fetch(`${functions_base_url}/accountDeleteAccount`, {
-		method: 'POST',
-		body: JSON.stringify({
-			data: {
-				uid: uid
-			}
-		}),
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${await exports.getIdToken()}`
-		},
+exports.getSocket = function () {
+	try {
+		if (socket && socket.connected) {
+			socket.disconnect();
+		}
+		if (socket) {
+			delete socket;
+		}
+	}
+	catch (e) {
+		console.log(e);
+	}
+}
+	return new Promise((resolve) => {
+		exports.getIdToken().then(function (idToken) {
+			console.log(process.env.IOT_SOCKET_URL, {
+				reconnectionDelay: 1000,
+				reconnectionAttempts: Infinity,
+				auth: {
+					token: idToken
+				},
+				query: {
+					location: '/discord'
+				}
+			});
+			socket = io(process.env.IOT_SOCKET_URL, {
+				reconnectionDelay: 1000,
+				reconnectionAttempts: Infinity,
+				auth: {
+					token: idToken
+				},
+				query: {
+					location: '/discord'
+				}
+			});
+			socket.on('connect', function () {
+				console.log('Connected to IOT server');
+			});
+			socket.on('disconnect', function () {
+				console.log('Disconnected from IOT server');
+			});
+			socket.on('error', function (error) {
+				console.log('Error from IOT server: ' + error);
+			});
+			resolve(socket);
+		});
 	});
-	return (await result.json()).result;
+};
+
+exports.accountDeleteAccount = async function (uid) {
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountDeleteAccount', {
+			uid: uid
+		}, function (result) {
+			resolve(result);
+		});
+	});
 };
 
 exports.accountLockAccount = async function (uid, minutes, reason) {
-	var result = await fetch(`${functions_base_url}/accountBlockAccount`, {
-		method: 'POST',
-		body: JSON.stringify({
-			data: {
-				uid: uid,
-				minutes: minutes,
-				reason: reason
-			}
-		}),
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${await exports.getIdToken()}`
-		},
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountBlockAccount', {
+			uid: uid,
+			minutes: minutes,
+			reason: reason
+		}, function (result) {
+			resolve(result);
+		});
 	});
-	return (await result.json()).result;
 };
 
 exports.accountUnlockAccount = async function (uid) {
-	var result = await fetch(`${functions_base_url}/accountUnblockAccount`, {
-		method: 'POST',
-		body: JSON.stringify({
-			data: {
-				uid: uid
-			}
-		}),
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${await exports.getIdToken()}`
-		},
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountUnblockAccount', {
+			uid: uid
+		}, function (result) {
+			resolve(result);
+		});
 	});
-	return (await result.json()).result;
 };
 
 exports.accountApproveAccount = async function (uid) {
-	var result = await fetch(`${functions_base_url}/accountApproveAccount`, {
-		method: 'POST',
-		body: JSON.stringify({
-			data: {
-				uid: uid
-			}
-		}),
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${await exports.getIdToken()}`
-		},
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountApproveAccount', {
+			uid: uid
+		}, function (result) {
+			resolve(result);
+		});
 	});
-	return (await result.json()).result;
 };
 
 exports.accountRejectAccount = async function (uid) {
-	var result = await fetch(`${functions_base_url}/accountRejectAccount`, {
-		method: 'POST',
-		body: JSON.stringify({
-			data: {
-				uid: uid
-			}
-		}),
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${await exports.getIdToken()}`
-		},
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountRejectAccount', {
+			uid: uid
+		}, function (result) {
+			resolve(result);
+		});
 	});
-	return (await result.json()).result;
 };
 
 exports.accountGetAccountReview = async function () {
-	var result = await fetch(`${functions_base_url}/accountGetUsersReview`, {
-		method: 'POST',
-		body: JSON.stringify({
-			data: {}
-		}),
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${await exports.getIdToken()}`
-		},
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountGetUsersReview', {}, function (result) {
+			resolve(result);
+		});
 	});
-	return (await result.json()).result;
 };
 
 exports.getIPData = async function (ip) {
