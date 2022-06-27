@@ -42,7 +42,6 @@ exports.getSocket = function () {
 	catch (e) {
 		console.log(e);
 	}
-}
 	return new Promise((resolve) => {
 		exports.getIdToken().then(function (idToken) {
 			console.log(process.env.IOT_SOCKET_URL, {
