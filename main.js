@@ -590,7 +590,7 @@ function generateIOTProfile(uid) {
 		var label_permission = '';
 		var banned = '';
 		for (var tour of Object.values(tours))
-			if (tour.tourModerator.includes(uid))
+			if (tour.tourModecrator.includes(uid))
 				label_permission += `<img class="icon-logo" src="${tour.tourLogo}"></img>`;
 		if (label_permission.length < 5)
 			label_permission = utils.Permission[public_user.permission];
@@ -795,6 +795,7 @@ discordClient.on('interactionCreate', async interaction => {
 			if (params[2])
 				voted = params[2].split(',');
 			var voted_users = [];
+			var voted_name = '';
 			for (i = 0; i < embed.fields.length; i++) {
 				if (embed.fields[i].name === 'Biểu quyết') {
 					voted_users = embed.fields[i].value.trim().split(' ');
@@ -812,6 +813,7 @@ discordClient.on('interactionCreate', async interaction => {
 						else
 							row.components[i].customId +=  `,${voted.length}`;
 						row.components[i].label = row.components[i].label.split('(')[0].trim();
+						voted_name = row.components[i].label;
 						row.components[i].label += ` (${voted.length + 1} phiếu)`;
 						voted = row.components[i].customId.split('_')[2].split(',');
 					}
@@ -827,7 +829,7 @@ discordClient.on('interactionCreate', async interaction => {
 					}
 				}
 				await interaction.message.edit({embeds: [embed], components: [row], attachments: []});
-				interaction.deleteReply();
+				interaction.editReply(`<@${userId}> biểu quyết ${voted_name}`);
 			} else {
 				return interaction.editReply('Bạn không có quyền thực hiện thao tác này!');
 			}
@@ -870,6 +872,7 @@ discordClient.on('interactionCreate', async interaction => {
 				return await interaction.deleteReply();
 			}
 			voted_users = voted_users.filter(r => r.trim() !== '');
+			var voted_name = '';
 			if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
 				for (i = 0; i < row.components.length; i++) {
 					if (row.components[i].customId.startsWith('reportblock_')) {
@@ -878,6 +881,7 @@ discordClient.on('interactionCreate', async interaction => {
 						else
 							row.components[i].customId +=  `,${voted.length}`;
 						row.components[i].label = row.components[i].label.split('(')[0].trim();
+						voted_name = row.components[i].label;
 						row.components[i].label += ` (${voted.length + 1} phiếu)`;
 						voted = row.components[i].customId.split('_')[3].split(',');
 					}
@@ -893,7 +897,7 @@ discordClient.on('interactionCreate', async interaction => {
 					}
 				}
 				await interaction.message.edit({embeds: [embed], components: [row]});
-				interaction.deleteReply();
+				interaction.editReply(`<@${userId}> biểu quyết ${voted_name}`);
 			} else {
 				return interaction.editReply('Bạn không có quyền thực hiện thao tác này!');
 			}
