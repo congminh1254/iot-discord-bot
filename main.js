@@ -684,7 +684,19 @@ discordClient.on('interactionCreate', async interaction => {
 		if (commandName === 'ping') {
 			await interaction.reply('Pong!');
 		} else if (commandName === 'server') {
-			await interaction.reply(`Server name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}`);
+			var serverStatus = 'Server is down';
+			try {
+				var serverStat = await (await fetch('https://iot-socket.chinhphucvn.com/stat')).json();
+				serverStatus = `IOT server status: \n- Online: ${serverStat.online} players.`;
+				serverStatus += ` \n- Free memory: ${Math.floor(serverStat.freemem/1024/1024)}/${Math.floor(serverStat.totalmem/1024/1024)}MB`;
+				var uptime = moment.utc(serverStat.uptime*1000);
+				var days = uptime.diff(moment.utc(0), 'days');
+				serverStatus += `\n- Uptime: ${days > 0 ? (days + ' days ') : ''}${uptime.format('HH:mm:ss')}s`;
+			}
+			catch (e) {
+				console.log(e);
+			}
+			await interaction.reply(`\`\`\`\nServer name: ${interaction.guild.name}\nTotal members: ${interaction.guild.memberCount}\n${serverStatus}\n\`\`\``);
 		} else if (commandName === 'user') {
 			await interaction.reply(`Your tag: ${interaction.user.tag}\nYour id: ${interaction.user.id}`);
 		} else if (commandName === 'iot') {

@@ -107,3 +107,4 @@ dist
 cert.json
 test.js
 tmp/
+.env
