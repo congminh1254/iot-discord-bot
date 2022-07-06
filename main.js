@@ -304,7 +304,7 @@ async function discordProcessIOTTools(msg) {
 				}, )
 				.setThumbnail(authUser.photoURL);
 			if (user.ip) {
-				var ip = user.ip.ip;
+				var ip = user.ip.ip || user.ip.query;
 				var users = {};
 				users = (await database.ref('/private_users/').orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
 				var value = '';
@@ -410,7 +410,7 @@ async function discordProcessIOTUpdates(msg) {
 					mess.addField('Account with same name', value);
 			}
 			if (user.ip) {
-				var ip = user.ip.ip;
+				var ip = user.ip.ip || user.ip.query;
 				users = {};
 				users = (await database.ref('/private_users/').orderByChild('ip/ip').startAt(ip).endAt(ip).once('value')).val() || {};
 				value = '';
