@@ -90,6 +90,7 @@ exports.accountDeleteAccount = async function (uid) {
 };
 
 exports.accountLockAccount = async function (uid, minutes, reason) {
+	await exports.getSocket();
 	return new Promise((resolve) => {
 		socket.emit('function', 'accountBlockAccount', {
 			uid: uid,

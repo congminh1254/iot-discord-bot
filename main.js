@@ -107,7 +107,7 @@ async function discordDeleteUser(interaction, uid) {
 			switch (reaction.emoji.name) {
 			case '✅':
 				functions.accountDeleteAccount(uid).then(function (result) {
-					interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+					interaction.editReply(`\`\`\`${result.message}\`\`\``);
 				});
 				break;
 			case '❎':
@@ -177,7 +177,7 @@ async function discordLockAccount(interaction, uid) {
 			msg_reason_reply.delete();
 			var noti_msg = await confirm_msg.channel.send(`\`\`\`You'll lock this account ${days} day(s). Reason: ${reason}.\`\`\``);
 			functions.accountLockAccount(uid, days * 24 * 60, reason).then(function (result) {
-				interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+				interaction.editReply(`\`\`\`${result.message}\`\`\``);
 				noti_msg.delete();
 			});
 			break;
@@ -220,7 +220,7 @@ async function discordUnlockAccount(interaction, uid) {
 			switch (reaction.emoji.name) {
 			case '✅':
 				functions.accountUnlockAccount(uid).then(function (result) {
-					interaction.editReply(`\`\`\`${result.message.message}\`\`\``);
+					interaction.editReply(`\`\`\`${result.message}\`\`\``);
 				});
 				break;
 			case '❎':
@@ -819,7 +819,7 @@ discordClient.on('interactionCreate', async interaction => {
 			voted_users = voted_users.filter(r => r.trim() !== '');
 			if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
 				for (var i = 0; i < row.components.length; i++) {
-					if (row.components[i].customId.startsWith('reportignore_')) {
+					if (row.components[i].customId === interaction.customId) {
 						if (params.length <= 2)
 							row.components[i].customId +=  `_${voted.length}`;
 						else
@@ -887,7 +887,7 @@ discordClient.on('interactionCreate', async interaction => {
 			var voted_name = '';
 			if (user.roles.cache.find(r => r.name === 'admin') || user.roles.cache.find(r => r.name === 'moderator') || user.roles.cache.find(r => r.name === 'verified-player')) {
 				for (i = 0; i < row.components.length; i++) {
-					if (row.components[i].customId.startsWith('reportblock_')) {
+					if (row.components[i].customId === interaction.customId) {
 						if (params.length <= 3)
 							row.components[i].customId +=  `_${voted.length}`;
 						else
@@ -932,7 +932,7 @@ discordClient.on('interactionCreate', async interaction => {
 				var minutes = params[2];
 				var reason = interaction.message.embeds[0].fields[2].value;
 				var result = await functions.accountLockAccount(uid, minutes, reason);
-				embed.addField('Trạng thái', `${result.message.message}`);
+				embed.addField('Trạng thái', `${result.message}`);
 				await interaction.message.edit({embeds: [embed], components: [row]});
 			}
 			break;
