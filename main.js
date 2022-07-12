@@ -590,7 +590,7 @@ function generateIOTProfile(uid) {
 		var label_permission = '';
 		var banned = '';
 		for (var tour of Object.values(tours))
-			if (tour.tourModecrator.includes(uid))
+			if (tour.tourModecrator && tour.tourModecrator.includes(uid))
 				label_permission += `<img class="icon-logo" src="${tour.tourLogo}"></img>`;
 		if (label_permission.length < 5)
 			label_permission = utils.Permission[public_user.permission];
