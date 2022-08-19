@@ -929,7 +929,7 @@ discordClient.on('interactionCreate', async interaction => {
 				}
 
 				uid = params[1];
-				var minutes = params[2];
+				var minutes = parseInt(params[2]);
 				var reason = interaction.message.embeds[0].fields[2].value;
 				var result = await functions.accountLockAccount(uid, minutes, reason);
 				embed.addField('Trạng thái', `${result.message}`);
