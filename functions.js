@@ -113,22 +113,24 @@ exports.accountUnlockAccount = async function (uid) {
 	});
 };
 
-exports.accountApproveAccount = async function (uid) {
+exports.accountApproveAccount = async function (uid, reviewer=null) {
 	await exports.getSocket();
 	return new Promise((resolve) => {
 		socket.emit('function', 'accountApproveAccount', {
-			uid: uid
+			uid: uid,
+			reviewer: reviewer
 		}, function (result) {
 			resolve(result);
 		});
 	});
 };
 
-exports.accountRejectAccount = async function (uid) {
+exports.accountRejectAccount = async function (uid, reviewer=null) {
 	await exports.getSocket();
 	return new Promise((resolve) => {
 		socket.emit('function', 'accountRejectAccount', {
-			uid: uid
+			uid: uid,
+			reviewer: reviewer
 		}, function (result) {
 			resolve(result);
 		});
@@ -148,3 +150,25 @@ exports.getIPData = async function (ip) {
 	var result = await fetch(`http://ip-api.com/json/${ip}`);
 	return await result.json();
 };
+
+exports.accountApplyReviewer = async function (uid) {
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountApplyReviewer', {
+			uid: uid
+		}, function (result) {
+			resolve(result);
+		});
+	});
+}
+
+exports.accountResignReviewer = async function (uid) {
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'accountResignReviewer', {
+			uid: uid
+		}, function (result) {
+			resolve(result);
+		});
+	});
+}

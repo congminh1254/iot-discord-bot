@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
+const { Routes } = require('discord-api-types/v10');
 
 var guildId = process.env.DISCORD_GUILD_ID;
 var clientId = process.env.DISCORD_APPLICATION_ID;
@@ -14,10 +14,12 @@ const commands = [
 	new SlashCommandBuilder().setName('done').setDescription('Mark support case as finished!'),
 	new SlashCommandBuilder().setName('update-role').setDescription('Sync role with IOT!'),
 	new SlashCommandBuilder().setName('iot').setDescription('Get user profile on IOT - IMIN Olympia Training!').addUserOption(option => option.setName('user').setDescription('Player')),
+	new SlashCommandBuilder().setName('apply-reviewer').setDescription('Apply for reviewer role!'),
+	new SlashCommandBuilder().setName('resign-reviewer').setDescription('Re resign reviewer role!'),
 ]
 	.map(command => command.toJSON());
 
-const rest = new REST({ version: '9' }).setToken(token);
+const rest = new REST({ version: '10' }).setToken(token);
 
 rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands })
 	.then(() => console.log('Successfully registered application commands.'))
