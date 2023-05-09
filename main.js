@@ -981,8 +981,13 @@ function generateIOTProfile(uid) {
 		}
 
 		html = ejs.render(html, params);
+		let prod = false;
+		if (fs.existsSync("/usr/bin/chromium")) {
+			prod = true;
+		}
 		var browser = await puppeteer.launch({
 			headless: "old",
+			executablePath: prod ? "/usr/bin/chromium" : undefined,
 		});
 		var page = await browser.newPage();
 		await page.setContent(html, {
