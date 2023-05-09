@@ -9,8 +9,8 @@ const express = require("express");
 var cors = require("cors");
 const admin = require("firebase-admin");
 const fs = require("fs");
-const pdf = require("html-pdf");
 const ejs = require("ejs");
+const puppeteer = require("puppeteer");
 require("dotenv").config();
 var config = JSON.parse(
 	new Buffer(process.env.FIREBASE_CONFIG, "base64").toString("ascii")
@@ -981,16 +981,25 @@ function generateIOTProfile(uid) {
 		}
 
 		html = ejs.render(html, params);
-		var options = {
-			zoomFactor: "2",
-			type: "png",
-			localUrlAccess: true,
-		};
-
-		pdf.create(html, options).toBuffer(function (err, buffer) {
-			if (err) console.error(err);
-			resolve(buffer);
+		var browser = await puppeteer.launch({
+			headless: "old",
 		});
+		var page = await browser.newPage();
+		await page.setContent(html, {
+			waitUntil: ["load", "networkidle0"],
+		});
+		await page.setViewport({
+			width: 600,
+			height: 200,
+			deviceScaleFactor: 1,
+		});
+		var buffer = await page.screenshot({
+			type: "png",
+			fullPage: true,
+			captureBeyondViewport: false,
+		});
+		await browser.close();
+		resolve(buffer);
 	});
 }
 
