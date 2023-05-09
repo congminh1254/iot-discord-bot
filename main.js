@@ -988,6 +988,9 @@ function generateIOTProfile(uid) {
 		var browser = await puppeteer.launch({
 			headless: "old",
 			executablePath: prod ? "/usr/bin/chromium" : undefined,
+			args: prod
+				? ["--no-sandbox", "--disable-setuid-sandbox"]
+				: undefined,
 		});
 		var page = await browser.newPage();
 		await page.setContent(html, {
