@@ -1147,6 +1147,22 @@ discordClient.on("interactionCreate", async (interaction) => {
 			await interaction.editReply(
 				`Vui lòng gửi tin nhắn vào kênh <#${channel.id}> để giải quyết vấn đề.`
 			);
+      // If user is not sending message in 5 minutes, delete channel
+      setTimeout(async function () {
+        var channel = interaction.guild.channels.cache.find(
+          (r) => r.name === `case_${caseId}`
+        );
+        if (channel) {
+          var messages = await channel.messages.fetch();
+          var userParticipated = false;
+          messages.forEach((message) => {
+            if (message.author.id === interaction.user.id) userParticipated = true;
+          });
+          if (!userParticipated) {
+            await discordRemoveChannel(`case_${caseId}`, "GUILD_TEXT");
+          }
+        }
+      }, 5 * 60 * 1000);
 		} else if (commandName === "done") {
 			if (interaction.channel.name.startsWith("case_")) {
 				await interaction.reply("Vui lòng đợi!");
@@ -1642,11 +1658,3 @@ app.post("/send_dm", (req, res) => {
 	}
 	res.send("Ok");
 });
-
-setInterval(async function () {
-	try {
-		await fetch(process.env.HOMEPAGE || "https://www.chinhphucvn.com");
-	} catch (error) {
-		console.error(error);
-	}
-}, 60000);
