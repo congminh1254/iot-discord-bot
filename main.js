@@ -513,6 +513,10 @@ async function discordProcessIOTTools(msg) {
 				});
 			}
 			break;
+		case "/update-schools":
+			var result = await functions.manageUpdateSchools();
+			msg.channel.send(result.message);
+			break;
 		case "/something":
 			break;
 	}

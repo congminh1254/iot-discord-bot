@@ -172,3 +172,12 @@ exports.accountResignReviewer = async function (uid) {
 		});
 	});
 }
+
+exports.manageUpdateSchools = async function () {
+	await exports.getSocket();
+	return new Promise((resolve) => {
+		socket.emit('function', 'manageUpdateSchools', {}, function (result) {
+			resolve(result);
+		});
+	});
+}
