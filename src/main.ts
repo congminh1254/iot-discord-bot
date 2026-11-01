@@ -6,6 +6,7 @@ import { handleButton } from './discord/buttons.ts';
 import { ChannelManager, findSendableChannel } from './discord/channels.ts';
 import { linkIotAccount } from './discord/link-account.ts';
 import { handleChatInputCommand } from './discord/slash-commands.ts';
+import { deleteInactiveSupportChannels } from './discord/support-cleanup.ts';
 import { clearMessagesInChannel, handleMessage, sendAllWaitingAccounts } from './discord/text-commands.ts';
 import { loadDotEnv, parseEnv } from './env.ts';
 import { initFirebase } from './firebase.ts';
@@ -60,6 +61,7 @@ client.once(Events.ClientReady, (ready) => {
 	});
 	setTimeout(() => {
 		clearMessagesInChannel(ctx, 'iot-updates').catch(logError);
+		deleteInactiveSupportChannels(client, env.DISCORD_GUILD_ID).catch(logError);
 	}, 5000);
 });
 
@@ -82,6 +84,11 @@ client.on(Events.InteractionCreate, (interaction) => {
 
 client.on(Events.GuildMemberAdd, (member) => {
 	linkIotAccount(client, ctx.database, member, true).catch(logError);
+});
+
+// Daily at 03:00, delete support channels with no activity for more than 14 days.
+schedule.scheduleJob('0 3 * * *', () => {
+	deleteInactiveSupportChannels(client, env.DISCORD_GUILD_ID).catch(logError);
 });
 
 // Every 6 hours, repost the queue of accounts waiting for review.

@@ -26,7 +26,6 @@ export function rolesForUser(user: IotUser): string[] {
 	if (rankRole) roles.push(rankRole);
 	const planRole = user.plan && user.plan > 0 ? PLAN_ROLES[user.plan] : undefined;
 	if (planRole) roles.push(planRole);
-	if (user.reviewer) roles.push('reviewer');
 	return roles;
 }
 

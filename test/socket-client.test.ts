@@ -64,8 +64,8 @@ describe('IotClient', () => {
 		const s = setup();
 		client = s.client;
 		await client.updateSchools();
-		await client.applyReviewer('u1');
+		await client.unlockAccount('u1');
 		expect(s.socket.disconnect).toHaveBeenCalledTimes(1);
-		expect(s.socket.emit).toHaveBeenLastCalledWith('function', 'accountApplyReviewer', { uid: 'u1' }, expect.any(Function));
+		expect(s.socket.emit).toHaveBeenLastCalledWith('function', 'accountUnblockAccount', { uid: 'u1' }, expect.any(Function));
 	});
 });

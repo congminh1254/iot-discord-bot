@@ -103,14 +103,6 @@ export class IotClient {
 		return this.call<IotUser[]>('accountGetUsersReview');
 	}
 
-	applyReviewer(uid: string) {
-		return this.call('accountApplyReviewer', { uid });
-	}
-
-	resignReviewer(uid: string) {
-		return this.call('accountResignReviewer', { uid });
-	}
-
 	updateSchools() {
 		return this.call('manageUpdateSchools');
 	}

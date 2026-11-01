@@ -14,7 +14,6 @@ export interface IotUser {
 	block_reason?: string;
 	avatarUrl?: string;
 	plan?: number;
-	reviewer?: boolean;
 	school?: {
 		schoolId?: string;
 		schoolName?: string;

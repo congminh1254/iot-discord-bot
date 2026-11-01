@@ -3,7 +3,7 @@
 Discord Bot for IOT - IMIN Olympia Training.
 
 It links Discord members to their IOT accounts (roles by permission, rank and plan),
-runs the account review and report-vote workflow, mirrors IOT revise rooms as voice
+runs the account review and report-vote workflow, manages support case channels, mirrors IOT revise rooms as voice
 channels, and exposes a few HTTP webhooks for IOT services.
 
 ## Requirements
@@ -50,6 +50,11 @@ npm run check      # all of the above
 | `src/discord/text-commands.ts` | `/acc`, `/review`, `/link`, ... typed in staff channels |
 | `src/discord/buttons.ts`, `votes.ts` | Review buttons and report voting |
 | `src/http/server.ts` | HTTP webhooks |
+
+## Scheduled jobs
+
+- Every 6 hours: clear `#iot-updates` and repost the accounts waiting for review.
+- Daily at 03:00 (and once at startup): delete `case_*` support channels in "help channels" with no message for more than 14 days.
 
 ## HTTP endpoints
 

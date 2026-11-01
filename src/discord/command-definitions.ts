@@ -11,8 +11,6 @@ export const commandDefinitions = [
 		.setName('iot')
 		.setDescription('Get user profile on IOT - IMIN Olympia Training!')
 		.addUserOption((option) => option.setName('user').setDescription('Player')),
-	new SlashCommandBuilder().setName('apply-reviewer').setDescription('Apply for reviewer role!'),
-	new SlashCommandBuilder().setName('resign-reviewer').setDescription('Re resign reviewer role!'),
 ];
 
 export type CommandName =
@@ -22,6 +20,4 @@ export type CommandName =
 	| 'support'
 	| 'done'
 	| 'update-role'
-	| 'iot'
-	| 'apply-reviewer'
-	| 'resign-reviewer';
+	| 'iot';

@@ -2,7 +2,6 @@ import {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
-	ChannelType,
 	EmbedBuilder,
 	type APIEmbedField,
 	type Message,
@@ -132,25 +131,6 @@ async function sendAccountReview(ctx: BotContext, msg: Message, channel: Sendabl
 	);
 	const payload = { embeds: [embed], components: [row] };
 
-	// Also open a private review channel for the reviewer assigned to the player's school.
-	const schoolId = user.school?.schoolId;
-	const reviewerId = schoolId
-		? ((await ctx.database.ref(`/data/schools/${schoolId}/reviewerId`).once('value')).val() as string | null)
-		: null;
-	if (reviewerId) {
-		const reviewerDiscord = (await ctx.database.ref(`/private_users/${reviewerId}/discord`).once('value')).val() as
-			| IotUser['discord']
-			| null;
-		if (reviewerDiscord?.id) {
-			const reviewer = await ctx.client.users.fetch(reviewerDiscord.id);
-			ctx.channels
-				.create(`review-${uid}`, ChannelType.GuildText, 'Review Channels', [reviewer], true)
-				.then(async (reviewChannel) => {
-					if (reviewChannel.isSendable()) await reviewChannel.send(payload);
-				})
-				.catch((err: unknown) => console.log(err));
-		}
-	}
 	await channel.send(payload);
 }
 

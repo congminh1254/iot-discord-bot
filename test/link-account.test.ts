@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { rolesForUser } from '../src/discord/link-account.ts';
 
 describe('rolesForUser', () => {
-	it('grants permission, rank, plan and reviewer roles in order', () => {
-		expect(rolesForUser({ permission: 2, talent: { rank: 3 }, plan: 2, reviewer: true })).toEqual([
+	it('grants permission, rank and plan roles in order', () => {
+		expect(rolesForUser({ permission: 2, talent: { rank: 3 }, plan: 2 })).toEqual([
 			'verified-player',
 			'rank-gold',
 			'elite+',
-			'reviewer',
 		]);
 	});
 

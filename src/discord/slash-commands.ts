@@ -1,11 +1,12 @@
-import { ChannelType, EmbedBuilder, type ChatInputCommandInteraction, type GuildMember } from 'discord.js';
+import { ChannelType, EmbedBuilder, MessageFlags, type ChatInputCommandInteraction, type GuildMember } from 'discord.js';
 import type { BotContext } from '../context.ts';
 import { getIotUidFromDiscordId } from '../firebase.ts';
 import { formatUptime } from '../utils.ts';
 import { linkIotAccount } from './link-account.ts';
 import { generateIotProfile } from './profile-card.ts';
 
-const SUPPORT_CATEGORY = 'help channels';
+export const SUPPORT_CATEGORY = 'help channels';
+export const REVIEWER_RETIRED_MESSAGE = 'Chương trình reviewer đã ngừng hoạt động.';
 const SUPPORT_IDLE_MS = 5 * 60 * 1000;
 const TRUSTED_ROLES = ['admin', 'moderator', 'verified-player'];
 
@@ -156,10 +157,10 @@ export async function handleChatInputCommand(ctx: BotContext, interaction: ChatI
 			});
 			break;
 		case 'apply-reviewer':
-			await withLinkedAccount(ctx, interaction, async (uid) => (await ctx.iot.applyReviewer(uid)).message);
-			break;
 		case 'resign-reviewer':
-			await withLinkedAccount(ctx, interaction, async (uid) => (await ctx.iot.resignReviewer(uid)).message);
+			// The school reviewer program is retired. These only answer stale registrations
+			// until `npm run deploy-command` removes the commands from the guild.
+			await interaction.reply({ content: REVIEWER_RETIRED_MESSAGE, flags: MessageFlags.Ephemeral });
 			break;
 	}
 }

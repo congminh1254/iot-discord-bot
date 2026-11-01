@@ -2,7 +2,6 @@ import {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
-	ChannelType,
 	ComponentType,
 	EmbedBuilder,
 	type ButtonInteraction,
@@ -15,7 +14,6 @@ import { deleteAccount, lockAccount, unlockAccount } from './account-actions.ts'
 import { hasAnyRole } from './slash-commands.ts';
 import { applyVote, closeVote, isDecided, type VoteButton, type VoteState } from './votes.ts';
 
-const REVIEW_CHANNEL_CLEANUP_MS = 10_000;
 const VOTER_ROLES = ['admin', 'moderator', 'verified-player'];
 
 /** Reads the first row of buttons and the first embed of a report message into plain vote state. */
@@ -86,9 +84,6 @@ async function handleReview(ctx: BotContext, interaction: ButtonInteraction, uid
 	const result = approve ? await ctx.iot.approveAccount(uid, reviewer) : await ctx.iot.rejectAccount(uid, reviewer);
 	await interaction.editReply(`\`\`\`${result.message}\`\`\``);
 	await interaction.message.delete();
-	setTimeout(() => {
-		ctx.channels.remove(`review-${uid}`, ChannelType.GuildText).catch((err: unknown) => console.log(err));
-	}, REVIEW_CHANNEL_CLEANUP_MS);
 }
 
 export async function handleButton(ctx: BotContext, interaction: ButtonInteraction): Promise<void> {
