@@ -2,6 +2,7 @@ import { cert, initializeApp, type App, type AppOptions, type ServiceAccount } f
 import { getAuth, type Auth } from 'firebase-admin/auth';
 import { getDatabase, type Database } from 'firebase-admin/database';
 import { decodeBase64Json, type Env } from './env.ts';
+import type { ServiceAccountKey } from './translate.ts';
 import type { IotUser } from './types.ts';
 
 /** Firebase web config (the same JSON the IOT web client uses). */
@@ -16,6 +17,8 @@ export interface FirebaseContext {
 	auth: Auth;
 	database: Database;
 	webConfig: FirebaseWebConfig;
+	/** The decoded service account key JSON (snake_case, as Google issues it). */
+	serviceAccountKey: ServiceAccountKey;
 }
 
 export function initFirebase(env: Env): FirebaseContext {
@@ -24,7 +27,7 @@ export function initFirebase(env: Env): FirebaseContext {
 	// The credential is built in memory: the service account key is never written to disk.
 	const options: AppOptions = { ...webConfig, credential: cert(serviceAccount) };
 	const app = initializeApp(options);
-	return { app, auth: getAuth(app), database: getDatabase(app), webConfig };
+	return { app, auth: getAuth(app), database: getDatabase(app), webConfig, serviceAccountKey: serviceAccount as ServiceAccountKey };
 }
 
 /** Finds the first user whose `field` equals `value` exactly. */

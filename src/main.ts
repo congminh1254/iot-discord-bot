@@ -10,6 +10,7 @@ import { deleteInactiveSupportChannels } from './discord/support-cleanup.ts';
 import { clearMessagesInChannel, handleMessage, sendAllWaitingAccounts } from './discord/text-commands.ts';
 import { loadDotEnv, parseEnv } from './env.ts';
 import { initFirebase } from './firebase.ts';
+import { translateOptions } from './translate.ts';
 import { createHttpServer, type DiscordGateway } from './http/server.ts';
 import { startReviseRoomSync } from './iot/revise-rooms.ts';
 import { IotClient } from './iot/socket-client.ts';
@@ -29,7 +30,9 @@ const client = new Client({
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-const translator = new translateV2.Translate();
+const translator = new translateV2.Translate(
+	translateOptions(firebase.serviceAccountKey, process.env.GOOGLE_APPLICATION_CREDENTIALS),
+);
 
 const ctx: BotContext = {
 	env,
